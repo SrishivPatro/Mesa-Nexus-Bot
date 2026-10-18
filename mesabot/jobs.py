@@ -1,4 +1,4 @@
-"""The four scheduled messages. Each job builds a fresh World, sends via CallMeBot and
+"""The four scheduled messages. Each job builds a fresh World, sends it (Telegram or CallMeBot) and
 records what it sent in the JSON log so nothing is sent twice."""
 
 from __future__ import annotations
@@ -119,4 +119,4 @@ def run_safely(name: str, svc: Services) -> None:
         try:
             svc.sender.send(f"⚠️ Mesa bot: the {name} job failed ({type(exc).__name__}: {str(exc)[:200]}).")
         except Exception:  # noqa: BLE001
-            log.exception("could not report the failure on WhatsApp")
+            log.exception("could not report the failure")

@@ -1,4 +1,7 @@
-"""Flask app: inbound WhatsApp webhook, health check, manual job triggers.
+"""Flask app: health check, manual job triggers, optional inbound webhook.
+
+With Telegram (the default channel) inbound chat runs through long polling in
+telegram.py, so /webhook is only needed for other relays.
 
 Inbound formats accepted on /webhook (all require WEBHOOK_SECRET as ?key=… or an
 X-Webhook-Secret header):
@@ -48,6 +51,16 @@ def create_app(svc: Services | None = None, start_scheduler: bool | None = None)
         log.info("scheduler started: %s", [j.name for j in scheduler.get_jobs()])
     app.config["scheduler"] = scheduler
 
+    poller = None
+    if config.channel == "telegram" and config.run_telegram_polling and not config.dry_run \
+            and (start_scheduler if start_scheduler is not None else True):
+        from .telegram import TelegramPoller
+        poller = TelegramPoller(svc.sender, svc.store, lambda text: handle_message(svc, text),
+                                pinned_chat_id=config.telegram_chat_id)
+        poller.start()
+        log.info("Telegram polling started")
+    app.config["telegram_poller"] = poller
+
     def authorized() -> bool:
         secret = config.webhook_secret
         given = request.args.get("key") or request.headers.get("X-Webhook-Secret") or ""
@@ -61,6 +74,9 @@ def create_app(svc: Services | None = None, start_scheduler: bool | None = None)
             "ok": True,
             "missing_env": config.missing(),
             "calendar": bool(svc.gcal),
+            "channel": config.channel,
+            "telegram_connected": bool(config.telegram_chat_id or svc.store.meta("telegram_chat_id"))
+            if config.channel == "telegram" else None,
             "jobs": describe(scheduler) if scheduler else [],
         })
 

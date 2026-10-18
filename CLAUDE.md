@@ -1,14 +1,16 @@
-# Mesa WhatsApp bot: context for Claude Code
+# Mesa Telegram bot: context for Claude Code
 
 Read this before changing anything in `mesa-bot/`. This project is unrelated to the Beta app
 in the rest of the repo; the root CLAUDE.md rules for `src/engine` do not apply here.
 
 ## What this project does
 A Python 3 service for one Mesa School of Business student. It:
-1. Sends four scheduled WhatsApp messages via **CallMeBot**: morning brief, hourly deadline alert,
-   6 pm grade alert and Sunday weekly summary.
-2. Runs a **conversational WhatsApp bot** (a Flask `/webhook`). Each message queries Nexus live
-   and gets an instant reply.
+1. Sends four scheduled messages on **Telegram**: morning brief, hourly deadline alert,
+   6 pm grade alert and Sunday weekly summary. CallMeBot (WhatsApp) remains as a legacy fallback
+   when `TELEGRAM_BOT_TOKEN` is unset. It was dropped as the default because its activation bot often never replies.
+2. Runs a **conversational Telegram bot** using long polling (`telegram.TelegramPoller`), so no public URL or
+   webhook is needed. Each message queries Nexus live and gets an instant reply. The first private chat to message
+   the bot becomes the owner (`meta.telegram_chat_id`) unless `TELEGRAM_CHAT_ID` pins it; other chats are ignored.
 3. Keeps a **JSON log** on a Railway volume: flagged URLs and attachments with done/read flags,
    alert history, MRS weekly status, grade alert history.
 
@@ -31,16 +33,17 @@ mesa-bot/
     store.py           JSON log (atomic writes, RLock); schema below
     nexus.py           NexusClient (MCP Streamable HTTP, SSE, session re-init), FixtureClient, Nexus wrappers, reminder_feed
     gcal.py            GoogleCalendar (service account or authorized user)
-    whatsapp.py        CallMeBot sender, chunking (1400 chars), DRY_RUN
+    telegram.py        Telegram sender (WhatsApp-style *bold* → HTML), poller, owner claim, slash commands
+    whatsapp.py        CallMeBot sender (legacy) + chunk_message used by both senders
     parsing.py         regex: URLs, Google Forms, attachments, plain-text dates/deadlines, action tags, MRS module
     terms.py           term detection from list_courses, course matching for free text
     attendance.py      margin(): can-miss / need-to-recover, analyze() with untracked + carry-forward
     items.py           World: one run's data → Items (assignments, announcement actions, MRS), grades, timetable, calendar
-    messages.py        all WhatsApp text (four messages + shared sections)
+    messages.py        all message text (four messages + shared sections), WhatsApp-style markup
     jobs.py            run_morning_brief / run_deadline_check / run_grade_check / run_weekly_summary, dedup
     scheduler.py       APScheduler cron jobs (IST)
     bot.py             inbound commands, `done` matching, natural-language routing
-    app.py             Flask: /health, /webhook, /run/<job>
+    app.py             Flask: /health, /run/<job>, optional /webhook; starts scheduler + Telegram poller
     cli.py             preview | send | ask | check | google-auth
   tests/               pytest; fixtures/ = fictional data in the exact Nexus response shapes
 ```
@@ -49,7 +52,7 @@ mesa-bot/
 ```bash
 cd mesa-bot
 pip install -r requirements-dev.txt
-pytest -q                                   # must stay green (25 tests, offline)
+pytest -q                                   # must stay green (30 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
 python -m mesabot.cli ask "when is my next SQL class" --fixtures tests/fixtures --now 2026-10-19T19:00:00+05:30
 python -m mesabot.cli check                 # with real env vars: Nexus + Calendar connectivity
@@ -60,12 +63,14 @@ Preview with fixtures uses a temporary log directory, so it never touches the re
 | Variable | Purpose |
 |---|---|
 | `NEXUS_MCP_TOKEN` | Nexus MCP token (`mesa_pat_…`), sent in the URL path and as `Authorization: Bearer`. Shown only once when created |
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather. Makes Telegram the channel |
+| `TELEGRAM_CHAT_ID` | Optional owner lock; otherwise the first private chat is stored as owner |
+| `RUN_TELEGRAM_POLLING` | `false` → no inbound chat |
 | `NEXUS_MCP_BASE_URL` | Default `https://students.mesaschool.co.in/mcp`; the token is appended as `/mcp/<token>` |
-| `CALLMEBOT_PHONE` | Recipient WhatsApp number with country code. Also the only sender the webhook answers |
-| `CALLMEBOT_API_KEY` | CallMeBot API key |
+| `CALLMEBOT_PHONE` / `CALLMEBOT_API_KEY` | Legacy WhatsApp channel (used only without `TELEGRAM_BOT_TOKEN`); the phone is also the only sender `/webhook` answers |
 | `GOOGLE_CALENDAR_CREDENTIALS_JSON` | Service-account key or authorized-user JSON (raw / base64 / path). Optional |
 | `GOOGLE_CALENDAR_ID` | Calendar id(s), comma-separated, default `primary` |
-| `WEBHOOK_SECRET` | Required for `/webhook` and `/run/<job>` (`?key=` or `X-Webhook-Secret`) |
+| `WEBHOOK_SECRET` | Optional; enables `/webhook` and `/run/<job>` (`?key=` or `X-Webhook-Secret`) |
 | `DATA_DIR` | Log directory; falls back to `RAILWAY_VOLUME_MOUNT_PATH`, then `./data` |
 | `DRY_RUN` | `true` → log messages instead of sending |
 | `RUN_SCHEDULER` | `false` → web only |
@@ -199,9 +204,13 @@ announcement keyword search, in that order).
 `done` scores candidates (flagged URLs, attachments, pending items, carried attendance) by token overlap plus a substring bonus.
 If the best matches come from more than one source, the bot asks for a clearer keyword. Matches inside one announcement are marked together.
 
-## Inbound transport, a known constraint
-CallMeBot is send-only. `/webhook` accepts Twilio WhatsApp (form `Body`/`From` → TwiML reply), JSON `{"text"}` (reply as JSON
-plus CallMeBot) and `GET ?text=`. All of them require `WEBHOOK_SECRET`, and a `From` that doesn't match `CALLMEBOT_PHONE` gets a 403.
+## Inbound transport
+Telegram: `TelegramPoller` long-polls `getUpdates` (timeout 50s) in a daemon thread started by `create_app`, and stores the
+offset in `meta.telegram_offset`. It calls `deleteWebhook` and `setMyCommands` at start, and maps `/cmd@bot args` to `cmd args`
+(`/start` → `help`). It needs exactly one process polling, because two pollers get HTTP 409, which is another reason for the single gunicorn worker.
+`/webhook` remains for other relays (Twilio form `Body`/`From` → TwiML; JSON `{"text"}`; `GET ?text=`), gated by `WEBHOOK_SECRET`.
+Message text is written in WhatsApp markdown (`*bold*`, `_italic_`) and converted by `telegram.to_html`. URLs and file names
+with underscores are left alone. If Telegram rejects the markup, the message is resent as plain text.
 
 ## Rules for future sessions
 - Keep `pytest -q` green. Add a fixture case to `tests/fixtures` (fictional data only, never real student data or phone numbers)
@@ -215,11 +224,14 @@ plus CallMeBot) and `GET ?text=`. All of them require `WEBHOOK_SECRET`, and a `F
 
 ## Status
 **Built (Oct 2026):** everything above: four scheduled messages, JSON log, regex extraction, term awareness and carry-forward,
-attendance maths, MRS tracker, `done` handling, command and NL bot, Flask webhook (Twilio/JSON/GET), Railway files, 25 tests.
+attendance maths, MRS tracker, `done` handling, command and NL bot, Telegram channel with polling chat (switched from CallMeBot
+on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 30 tests. Dry-run on real Nexus data (18 Oct) fixed two
+noise bugs: past-dated announcements, and assignment notifications.
 
 **Pending / ideas:**
-- Verify against the live Nexus MCP URL once the token is set (`cli check`). The client follows the MCP Streamable HTTP spec.
-  If Nexus needs a different auth header, change `NexusClient.__init__`.
+- First live run on Railway: the client follows the MCP Streamable HTTP spec at `/mcp/<token>`, but the sandbox could not reach
+  students.mesaschool.co.in, so the real transport is unverified. Check the logs on the first deploy.
+- Open question for the user: hide previous-term carry-forward items by default? (7 old assignments and 6 attendance warnings as of Oct 2026)
 - An optional LLM fallback for open questions (e.g. Claude with Nexus tools) when the rule-based router finds nothing.
 - Pull assignment briefs (`get_assignment`) into the 24h alert for attachments and rubric links.
 - Detect MRS completion automatically if Nexus exposes it.

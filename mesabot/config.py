@@ -36,6 +36,8 @@ class Config:
     # Required secrets
     nexus_token: str | None = None
     nexus_base_url: str | None = DEFAULT_NEXUS_URL
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None
     callmebot_phone: str | None = None
     callmebot_api_key: str | None = None
     google_credentials_json: str | None = None
@@ -51,6 +53,7 @@ class Config:
     action_lookback_days: int = 7
     untracked_courses: tuple[str, ...] = field(default=DEFAULT_UNTRACKED_COURSES)
     whatsapp_chunk_size: int = 1400
+    run_telegram_polling: bool = True
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -61,6 +64,8 @@ class Config:
         return cls(
             nexus_token=_env("NEXUS_MCP_TOKEN"),
             nexus_base_url=_env("NEXUS_MCP_BASE_URL", DEFAULT_NEXUS_URL),
+            telegram_bot_token=_env("TELEGRAM_BOT_TOKEN"),
+            telegram_chat_id=_env("TELEGRAM_CHAT_ID"),
             callmebot_phone=_env("CALLMEBOT_PHONE"),
             callmebot_api_key=_env("CALLMEBOT_API_KEY"),
             google_credentials_json=_env("GOOGLE_CALENDAR_CREDENTIALS_JSON"),
@@ -78,13 +83,17 @@ class Config:
                 else DEFAULT_UNTRACKED_COURSES
             ),
             whatsapp_chunk_size=int(_env("WHATSAPP_CHUNK_SIZE", "1400")),
+            run_telegram_polling=_flag("RUN_TELEGRAM_POLLING", True),
         )
 
     def missing(self) -> list[str]:
         """Names of required variables that are not set (Google Calendar is optional)."""
-        required = {
-            "NEXUS_MCP_TOKEN": self.nexus_token,
-            "CALLMEBOT_PHONE": self.callmebot_phone,
-            "CALLMEBOT_API_KEY": self.callmebot_api_key,
-        }
-        return [name for name, value in required.items() if not value]
+        missing = [] if self.nexus_token else ["NEXUS_MCP_TOKEN"]
+        if not self.telegram_bot_token and not (self.callmebot_phone and self.callmebot_api_key):
+            missing.append("TELEGRAM_BOT_TOKEN")
+        return missing
+
+    @property
+    def channel(self) -> str:
+        """Telegram when its token is set; CallMeBot (WhatsApp) is the legacy fallback."""
+        return "telegram" if self.telegram_bot_token else "callmebot"
