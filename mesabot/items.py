@@ -121,8 +121,9 @@ class World:
                                   parse_iso(a.get("postedAt")) or self.now, course=a.get("course"),
                                   listed_attachments=a.get("attachments") or [], pinned=bool(a.get("pinned"))))
         for n in self.notifications:
-            if (n.get("links") or {}).get("announcementId"):
-                continue  # the full announcement is parsed above; notification text is truncated
+            links = n.get("links") or {}
+            if links.get("announcementId") or links.get("assignmentId"):
+                continue  # covered by the full announcement / list_assignments; notification text is truncated
             out.append(parse_text("notification", n["id"], n.get("title", ""), n.get("body", ""),
                                   parse_iso(n.get("createdAt")) or self.now))
         return out
@@ -207,6 +208,8 @@ class World:
                 continue
             if p.deadlines:
                 live = bool(future_deadlines)
+            elif p.dates and not future_events:
+                live = False  # only talks about days that are over ("tomorrow's exam" from last week)
             elif "mandatory" in p.tags:
                 live = bool(future_events)
             else:

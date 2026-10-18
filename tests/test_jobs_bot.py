@@ -21,6 +21,8 @@ def test_morning_brief_sections(make_svc):
     assert "Mid-Term Assignment" not in text         # released 9 days ago
     assert "ILS/BSL opt-in form" not in text         # its deadline passed
     assert "Update on Water Quality" not in text     # not actionable
+    assert "End-Term Examination" not in text        # only mentions a day that is over
+    assert "New assignment" not in text              # assignment notifications duplicate list_assignments
 
 
 def test_graded_in_class_assessment_is_not_pending(make_svc):

@@ -33,6 +33,17 @@
    "links": {
     "assignmentId": "a6"
    }
+  },
+  {
+   "id": "x4",
+   "type": "assignment_new",
+   "title": "New assignment",
+   "body": "Important: Final Snapshot - Graded Submission",
+   "read": false,
+   "createdAt": "2026-10-17T12:53:44.259Z",
+   "links": {
+    "assignmentId": "zz"
+   }
   }
  ]
 }
