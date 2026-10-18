@@ -33,8 +33,9 @@ APScheduler and Flask.
 2. **Generate a token**. Tick every area: Schedule, Assignments, Grades, Attendance, Announcements,
    Notifications, Courses, Profile. Missing areas show up as errors in that section.
 3. Pick an expiry date. When it expires, generate a new token and update the Railway variable.
-4. Copy the **token** → `NEXUS_MCP_TOKEN`. Copy the **server URL** shown on the same page → `NEXUS_MCP_BASE_URL`.
-   The bot speaks MCP's Streamable HTTP transport (JSON-RPC over POST) and sends the token as `Authorization: Bearer <token>`.
+4. Copy the **token** (starts with `mesa_pat_`) → `NEXUS_MCP_TOKEN`. It is shown **only once**, in the creation window.
+   If you lost it, delete the old token and create a new one. The server URL defaults to
+   `https://students.mesaschool.co.in/mcp`, and the bot calls `…/mcp/<token>` as the Nexus page describes.
 
 ### 3. Google Calendar API credentials (optional but recommended)
 **Option A: service account (simplest for a server)**
@@ -91,7 +92,7 @@ python -m mesabot.cli send morning                            # really sends to 
    | Variable | Required | Purpose |
    |---|---|---|
    | `NEXUS_MCP_TOKEN` | ✅ | Nexus MCP token (Bearer) |
-   | `NEXUS_MCP_BASE_URL` | ✅ | Nexus MCP server URL from the Nexus MCP page |
+   | `NEXUS_MCP_BASE_URL` | optional | Default `https://students.mesaschool.co.in/mcp` |
    | `CALLMEBOT_PHONE` | ✅ | Your WhatsApp number, with country code |
    | `CALLMEBOT_API_KEY` | ✅ | Key from the CallMeBot activation reply |
    | `GOOGLE_CALENDAR_CREDENTIALS_JSON` | optional | Service-account key JSON or authorized-user JSON (raw, base64, or a file path) |

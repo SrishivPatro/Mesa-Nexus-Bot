@@ -17,7 +17,7 @@ class FakeMCP(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         FakeMCP.seen.append((body.get("method"), self.headers.get("Mcp-Session-Id"),
-                             self.headers.get("Authorization")))
+                             self.headers.get("Authorization"), self.path))
         if body["method"] == "initialize":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -61,6 +61,7 @@ def test_initialize_call_sse_and_session_expiry(server):
     assert client.call_tool("list_assignments", {"status": "due", "x": None}) == {
         "tool": "list_assignments", "args": {"status": "due"}}
     assert FakeMCP.seen[0][0] == "initialize" and FakeMCP.seen[0][2] == "Bearer tok"
+    assert FakeMCP.seen[0][3] == "/mcp/tok"  # token in the path, as Nexus documents
     assert FakeMCP.seen[2][1] == "sess-1"
     FakeMCP.sessions.clear()  # server forgets the session → client re-initializes
     assert client.call_tool("get_grades")["tool"] == "get_grades"

@@ -38,8 +38,11 @@ class NexusClient:
 
     def __init__(self, base_url: str, token: str, timeout: float = 30.0):
         if not base_url or not token:
-            raise NexusError("NEXUS_MCP_BASE_URL and NEXUS_MCP_TOKEN must both be set")
-        self.base_url = base_url.rstrip("/")
+            raise NexusError("NEXUS_MCP_TOKEN must be set")
+        base_url = base_url.rstrip("/")
+        # Nexus documents token auth as https://students.mesaschool.co.in/mcp/<token>;
+        # the token also goes in the Authorization header for servers that read it there.
+        self.base_url = base_url if token in base_url else f"{base_url}/{token}"
         self.timeout = timeout
         self._http = requests.Session()
         self._http.headers.update({
@@ -65,7 +68,8 @@ class NexusClient:
             raise _SessionExpired()
         if resp.status_code in (401, 403):
             raise NexusError("Nexus rejected the token (401/403). Generate a new one in Nexus → Nexus MCP.")
-        resp.raise_for_status()
+        if not resp.ok:
+            raise NexusError(f"Nexus HTTP {resp.status_code}")  # no URL: it contains the token
         sid = resp.headers.get("Mcp-Session-Id")
         if sid:
             self._session_id = sid
@@ -128,7 +132,7 @@ class NexusClient:
                     self._initialized = False
                 except (requests.ConnectionError, requests.Timeout) as exc:
                     if attempt == 2:
-                        raise NexusError(f"Nexus unreachable: {exc}") from exc
+                        raise NexusError(f"Nexus unreachable ({type(exc).__name__})") from None
                     _time.sleep(2 ** attempt)
             else:
                 raise NexusError("Nexus session could not be established")

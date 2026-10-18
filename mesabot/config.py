@@ -16,6 +16,9 @@ DEFAULT_UNTRACKED_COURSES = (
 )
 
 
+DEFAULT_NEXUS_URL = "https://students.mesaschool.co.in/mcp"
+
+
 def _env(name: str, default: str | None = None) -> str | None:
     value = os.environ.get(name)
     return value if value not in (None, "") else default
@@ -32,7 +35,7 @@ def _flag(name: str, default: bool) -> bool:
 class Config:
     # Required secrets
     nexus_token: str | None = None
-    nexus_base_url: str | None = None
+    nexus_base_url: str | None = DEFAULT_NEXUS_URL
     callmebot_phone: str | None = None
     callmebot_api_key: str | None = None
     google_credentials_json: str | None = None
@@ -57,7 +60,7 @@ class Config:
         untracked = _env("ATTENDANCE_UNTRACKED_COURSES")
         return cls(
             nexus_token=_env("NEXUS_MCP_TOKEN"),
-            nexus_base_url=_env("NEXUS_MCP_BASE_URL"),
+            nexus_base_url=_env("NEXUS_MCP_BASE_URL", DEFAULT_NEXUS_URL),
             callmebot_phone=_env("CALLMEBOT_PHONE"),
             callmebot_api_key=_env("CALLMEBOT_API_KEY"),
             google_credentials_json=_env("GOOGLE_CALENDAR_CREDENTIALS_JSON"),
@@ -81,7 +84,6 @@ class Config:
         """Names of required variables that are not set (Google Calendar is optional)."""
         required = {
             "NEXUS_MCP_TOKEN": self.nexus_token,
-            "NEXUS_MCP_BASE_URL": self.nexus_base_url,
             "CALLMEBOT_PHONE": self.callmebot_phone,
             "CALLMEBOT_API_KEY": self.callmebot_api_key,
         }

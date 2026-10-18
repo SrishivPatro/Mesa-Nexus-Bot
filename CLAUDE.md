@@ -59,8 +59,8 @@ Preview with fixtures uses a temporary log directory, so it never touches the re
 ## Environment variables
 | Variable | Purpose |
 |---|---|
-| `NEXUS_MCP_TOKEN` | Nexus MCP token, sent as `Authorization: Bearer`. From Nexus sidebar → Nexus MCP |
-| `NEXUS_MCP_BASE_URL` | Nexus MCP server URL (POST endpoint for JSON-RPC) |
+| `NEXUS_MCP_TOKEN` | Nexus MCP token (`mesa_pat_…`), sent in the URL path and as `Authorization: Bearer`. Shown only once when created |
+| `NEXUS_MCP_BASE_URL` | Default `https://students.mesaschool.co.in/mcp`; the token is appended as `/mcp/<token>` |
 | `CALLMEBOT_PHONE` | Recipient WhatsApp number with country code. Also the only sender the webhook answers |
 | `CALLMEBOT_API_KEY` | CallMeBot API key |
 | `GOOGLE_CALENDAR_CREDENTIALS_JSON` | Service-account key or authorized-user JSON (raw / base64 / path). Optional |
