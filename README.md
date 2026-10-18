@@ -21,7 +21,7 @@ Replies happen in the same Telegram chat; no webhook or public URL is needed.
 
 ### 1. Create your Telegram bot (2 min)
 1. In Telegram, open **@BotFather** (the one with the blue tick) and send `/newbot`.
-2. Pick a name (e.g. *Mesa Assistant*) and a username ending in `bot` (e.g. `srishiv_mesa_bot`).
+2. Pick a name (e.g. *Mesa Assistant*) and a username ending in `bot` (e.g. `my_mesa_helper_bot`).
 3. BotFather replies with a **token** like `7123456789:AAH…`. That is your `TELEGRAM_BOT_TOKEN`.
 
 ### 2. Get your Nexus MCP token (2 min)
@@ -33,7 +33,7 @@ Replies happen in the same Telegram chat; no webhook or public URL is needed.
 The bot calls `https://students.mesaschool.co.in/mcp/<token>`, as the Nexus MCP page describes.
 
 ### 3. Deploy on Railway (10 min)
-1. [railway.com](https://railway.com) → sign in with GitHub → **New Project → Deploy from GitHub repo** → `mesa-bot`.
+1. [railway.com](https://railway.com) → sign in with GitHub → **New Project → Deploy from GitHub repo** → `Mesa-Nexus-Bot`.
 2. Open the service → **Settings** and leave **Serverless / App Sleeping OFF**: scheduled messages only fire while the bot is awake.
 3. **Add a Volume** (⌘K → "Volume", or right-click the service) with mount path **`/data`**.
    It stores the log of done items, alerts sent and grades seen.
@@ -112,7 +112,7 @@ If a `done` keyword matches several items, the bot lists them and asks for a few
 
 ## Run it locally (optional)
 ```bash
-git clone https://github.com/SrishivPatro/mesa-bot && cd mesa-bot
+git clone https://github.com/SrishivPatro/Mesa-Nexus-Bot && cd Mesa-Nexus-Bot
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest -q                                   # offline tests
