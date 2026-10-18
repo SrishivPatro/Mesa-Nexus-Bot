@@ -1,7 +1,6 @@
-# Railway config. In the service settings set Root Directory to /mesa-bot and
-# Config-as-code path to /mesa-bot/railway.toml (Railway does not look for the
-# config file inside the root directory on its own). Attach a Volume mounted at
-# /data: Railway sets RAILWAY_VOLUME_MOUNT_PATH, which the bot uses for mesa_log.json.
+# Railway picks this file up automatically from the repo root.
+# Attach a Volume mounted at /data: Railway sets RAILWAY_VOLUME_MOUNT_PATH,
+# which the bot uses for mesa_log.json.
 
 [deploy]
 # ONE worker: APScheduler runs inside the web process and must start exactly once.

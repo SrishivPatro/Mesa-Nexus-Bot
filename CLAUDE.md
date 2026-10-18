@@ -1,7 +1,6 @@
 # Mesa Telegram bot: context for Claude Code
 
-Read this before changing anything in `mesa-bot/`. This project is unrelated to the Beta app
-in the rest of the repo; the root CLAUDE.md rules for `src/engine` do not apply here.
+Read this before changing anything. This repository is a standalone personal project.
 
 ## What this project does
 A Python 3 service for one Mesa School of Business student. It:

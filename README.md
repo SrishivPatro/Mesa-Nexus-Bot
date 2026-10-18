@@ -15,9 +15,6 @@ courses, profile, plus the `reminder-automation` skill as the main deadline feed
 You can also message the bot any time (`due`, `attendance`, `done mrs`, "when is my next SQL class"…).
 Replies happen in the same Telegram chat; no webhook or public URL is needed.
 
-> This folder lives inside the `Beta-MVP` repo, but it is a separate project. On Railway, deploy it with
-> **Root Directory = `/mesa-bot`**.
-
 ---
 
 ## Setup: 3 steps, about 15 minutes
@@ -36,12 +33,8 @@ Replies happen in the same Telegram chat; no webhook or public URL is needed.
 The bot calls `https://students.mesaschool.co.in/mcp/<token>`, as the Nexus MCP page describes.
 
 ### 3. Deploy on Railway (10 min)
-1. [railway.com](https://railway.com) → sign in with GitHub → **New Project → Deploy from GitHub repo** → `Beta-MVP`.
-2. Open the service → **Settings**:
-   - **Source → Branch**: the branch with this code (or `main` once merged)
-   - **Source → Root Directory** = `/mesa-bot`
-   - **Config-as-code → Railway config file** = `/mesa-bot/railway.toml`
-   - Leave **Serverless / App Sleeping OFF**: scheduled messages only fire while the bot is awake.
+1. [railway.com](https://railway.com) → sign in with GitHub → **New Project → Deploy from GitHub repo** → `mesa-bot`.
+2. Open the service → **Settings** and leave **Serverless / App Sleeping OFF**: scheduled messages only fire while the bot is awake.
 3. **Add a Volume** (⌘K → "Volume", or right-click the service) with mount path **`/data`**.
    It stores the log of done items, alerts sent and grades seen.
 4. **Variables** tab → add:
@@ -119,7 +112,7 @@ If a `done` keyword matches several items, the bot lists them and asks for a few
 
 ## Run it locally (optional)
 ```bash
-cd mesa-bot
+git clone https://github.com/SrishivPatro/mesa-bot && cd mesa-bot
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest -q                                   # offline tests
