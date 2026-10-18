@@ -51,7 +51,7 @@ Mesa-Nexus-Bot/
 ```bash
 cd Mesa-Nexus-Bot
 pip install -r requirements-dev.txt
-pytest -q                                   # must stay green (38 tests, offline)
+pytest -q                                   # must stay green (40 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
 python -m mesabot.cli ask "when is my next SQL class" --fixtures tests/fixtures --now 2026-10-19T19:00:00+05:30
 python -m mesabot.cli check                 # with real env vars: Nexus + Calendar connectivity
@@ -191,7 +191,7 @@ The item is flagged every morning and alerted in the last 24h before Sunday 23:5
 the item still shows (as "module not announced yet"). Nexus has no completion signal, so `done mrs` is the only way to clear it.
 
 ## Inbound command list (`bot.route`)
-`help` · `due` · `today` · `week` · `attendance` · `grades`/`marks` · `pending` · `mrs` · `schedule <day>` (today, tomorrow,
+`help` · `status` (live Nexus/Gemini/Calendar check, last Gemini error) · `due` · `today` · `week` · `attendance` · `grades`/`marks` · `pending` · `mrs` · `schedule <day>` (today, tomorrow,
 monday, next fri, 24 oct, 2026-10-24) · `done <keyword>` · `feedback <assignment>` · free text → `answer_question`
 (grades / attendance / announcements / instructor / MRS / due / notifications / next class / day schedule / course info /
 announcement keyword search, in that order).
@@ -235,7 +235,7 @@ with underscores are left alone. If Telegram rejects the markup, the message is 
 ## Status
 **Built (Oct 2026):** everything above: four scheduled messages, JSON log, regex extraction, term awareness and carry-forward,
 attendance maths, MRS tracker, `done` handling, command and NL bot, Telegram channel with polling chat (switched from CallMeBot
-on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 38 tests. Free-text answers: quick rules + optional Gemini (free tier). Live on Railway since 18 Oct 2026; Telegram connected.
+on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 40 tests. Free-text answers: quick rules + optional Gemini (free tier). Live on Railway since 18 Oct 2026; Telegram connected.
 Previous-term items hidden by default (`CARRY_FORWARD`), and messages restyled (urgency dots, CAPS headers) at the user's request. Dry-run on real Nexus data (18 Oct) fixed two
 noise bugs: past-dated announcements, and assignment notifications.
 

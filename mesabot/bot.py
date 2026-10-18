@@ -32,6 +32,7 @@ HELP = """*🤖 MESA BOT*
 `mrs` · this week's MRS module
 `schedule monday` · classes on a day
 `done mrs` · tick something off
+`status` · check Nexus and Gemini are connected
 
 *Or just ask*
 _how many Data 102 classes next week?_
@@ -56,6 +57,8 @@ def route(world: World, text: str) -> str:
     low = re.sub(r"\s+", " ", text.lower()).strip(" ?!.")
     if low in {"help", "hi", "hello", "menu", "commands", "?", "start"}:
         return HELP
+    if low in {"status", "ai", "health"}:
+        return cmd_status(world)
     if low.startswith("done"):
         return cmd_done(world, text[4:].strip())
     if low.startswith("schedule") or low.startswith("timetable"):
@@ -70,6 +73,31 @@ def route(world: World, text: str) -> str:
 
 
 # ---- commands ----------------------------------------------------------------------------
+
+def cmd_status(world: World) -> str:
+    """Is everything connected? Answers from live checks, never from Gemini."""
+    lines = ["*🩺 STATUS*"]
+    try:
+        me = world.nexus.get_me()
+        lines.append(f"✅ Nexus: connected ({me.get('name') or 'ok'}) · {world.ctx.active_name or 'term ?'}")
+    except Exception as exc:  # noqa: BLE001
+        lines.append(f"❌ Nexus: {type(exc).__name__}: {str(exc)[:120]}")
+    ai = world.svc.ai
+    if not ai:
+        lines.append("⚪ Gemini: not set up (add GEMINI_API_KEY in Railway → Variables)")
+    else:
+        try:
+            models = ai.models()
+            lines.append(f"✅ Gemini: key works · model {ai.last_model or models[0]}")
+        except Exception as exc:  # noqa: BLE001
+            lines.append(f"❌ Gemini: {type(exc).__name__}: {str(exc)[:160]}")
+        if ai.last_error:
+            lines.append(f"⚠️ Last Gemini error: {ai.last_error}")
+        elif ai.last_ok:
+            lines.append("✅ Last question answered by Gemini")
+    lines.append(f"{'✅' if world.svc.gcal else '⚪'} Google Calendar: {'connected' if world.svc.gcal else 'not set up'}")
+    return "\n".join(lines)
+
 
 def cmd_due(world: World) -> str:
     now = world.now

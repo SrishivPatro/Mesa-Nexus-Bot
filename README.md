@@ -123,6 +123,7 @@ Type them plainly or with a slash (`/due`). Telegram shows the slash menu.
 | `schedule <day>` | e.g. `schedule monday`, `schedule tomorrow`, `schedule next fri`, `schedule 24 oct` |
 | `done <keyword>` | marks a form, link, attachment, announcement action, assignment or carried-forward attendance warning as done, e.g. `done mrs`, `done ils form`, `done case.pdf` |
 | `feedback <assignment>` | full feedback text for one grade |
+| `status` | whether Nexus, Gemini and Calendar are connected, and the last Gemini error |
 | `help` | this list |
 | anything else | routed to the right Nexus endpoint: *"when is my next Finance class"*, *"what did I score in Art of Selling"*, *"am I at risk of low attendance"*, *"what announcements came this week"*, *"who teaches SQL"* |
 

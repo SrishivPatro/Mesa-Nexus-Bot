@@ -102,6 +102,9 @@ class Gemini:
         self._models_at = 0.0
         self._lock = threading.Lock()
         self.history: deque[tuple[float, str, str]] = deque(maxlen=HISTORY_TURNS)
+        self.last_error: str | None = None
+        self.last_ok: float | None = None
+        self.last_model: str | None = None
 
     # ---- transport -----------------------------------------------------------------------
 
@@ -144,7 +147,9 @@ class Gemini:
         last: Exception | None = None
         for model in self.models():
             try:
-                return self._request("POST", f"models/{model}:generateContent", body)
+                data = self._request("POST", f"models/{model}:generateContent", body)
+                self.last_model = model
+                return data
             except GeminiError as exc:
                 last = exc
                 if not re.search(r"HTTP (404|429|500|503)", str(exc)):
@@ -155,6 +160,13 @@ class Gemini:
     # ---- conversation ----------------------------------------------------------------------
 
     def answer(self, question: str, tools: "NexusTools", system: str) -> str:
+        try:
+            return self._answer(question, tools, system)
+        except Exception as exc:
+            self.last_error = f"{type(exc).__name__}: {str(exc)[:200]}"
+            raise
+
+    def _answer(self, question: str, tools: "NexusTools", system: str) -> str:
         now = time.time()
         while self.history and now - self.history[0][0] > HISTORY_TTL:
             self.history.popleft()
@@ -182,6 +194,7 @@ class Gemini:
                 if not text:
                     raise GeminiError(f"empty answer ({candidates[0].get('finishReason')})")
                 self.history.append((now, question, text))
+                self.last_ok, self.last_error = time.time(), None
                 return text
             # Keep the model turn exactly as returned (it can carry thought signatures).
             contents.append({"role": "model", "parts": parts})

@@ -33,6 +33,7 @@ BOT_COMMANDS = [
     ("mrs", "This week's MRS module status"),
     ("schedule", "Timetable for a day, e.g. /schedule monday"),
     ("done", "Mark something done, e.g. /done mrs"),
+    ("status", "Check Nexus and Gemini are connected"),
     ("help", "All commands"),
 ]
 

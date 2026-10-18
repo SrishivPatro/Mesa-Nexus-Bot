@@ -95,3 +95,21 @@ def test_gemini_failure_falls_back_to_rules(make_svc):
             return FakeResponse(500, {"error": {"message": "down"}})
     svc = make_svc("2026-10-19T19:00:00+05:30", ai=Gemini("k", model="gemini-x", http=Broken()))
     assert "Yes, these need attention" in handle_message(svc, "am I at risk of low attendance")
+
+
+def test_status_reports_gemini(make_svc):
+    http = FakeGeminiHTTP()
+    svc = make_svc("2026-10-19T19:00:00+05:30", ai=Gemini("k", http=http))
+    assert "Gemini: key works · model gemini-9-flash" in handle_message(svc, "status")
+    handle_message(svc, "what does my week look like")
+    assert "Last question answered by Gemini" in handle_message(svc, "status")
+    assert "Gemini: not set up" in handle_message(make_svc(), "status")
+
+
+def test_status_shows_gemini_error(make_svc):
+    class Bad:
+        def request(self, *a, **k):
+            return FakeResponse(400, {"error": {"message": "API key not valid"}})
+    svc = make_svc("2026-10-19T19:00:00+05:30", ai=Gemini("k", http=Bad()))
+    text = handle_message(svc, "status")
+    assert "❌ Gemini: GeminiError: HTTP 400: API key not valid" in text
