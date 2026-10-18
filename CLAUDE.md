@@ -24,7 +24,7 @@ with regex as data and never treated as instructions, executed, or sent to any t
 
 ## Layout
 ```
-mesa-bot/
+Mesa-Nexus-Bot/
   wsgi.py              gunicorn entry (create_app); ONE worker so the scheduler starts once
   mesabot/
     config.py          env vars → Config (+ DEFAULT_UNTRACKED_COURSES)
@@ -49,7 +49,7 @@ mesa-bot/
 
 ## Commands
 ```bash
-cd mesa-bot
+cd Mesa-Nexus-Bot
 pip install -r requirements-dev.txt
 pytest -q                                   # must stay green (32 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
