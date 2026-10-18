@@ -1,0 +1,13 @@
+# Railway config. In the service settings set Root Directory to /mesa-bot and
+# Config-as-code path to /mesa-bot/railway.toml (Railway does not look for the
+# config file inside the root directory on its own). Attach a Volume mounted at
+# /data: Railway sets RAILWAY_VOLUME_MOUNT_PATH, which the bot uses for mesa_log.json.
+
+[deploy]
+# ONE worker: APScheduler runs inside the web process and must start exactly once.
+startCommand = "gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT wsgi:app"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+# Keep the process awake so scheduled messages fire: do not enable Serverless / App Sleeping.
