@@ -39,6 +39,8 @@ class Config:
     nexus_base_url: str | None = DEFAULT_NEXUS_URL
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
+    gemini_api_key: str | None = None
+    gemini_model: str | None = None
     callmebot_phone: str | None = None
     callmebot_api_key: str | None = None
     google_credentials_json: str | None = None
@@ -68,6 +70,8 @@ class Config:
             nexus_base_url=_env("NEXUS_MCP_BASE_URL", DEFAULT_NEXUS_URL),
             telegram_bot_token=_env("TELEGRAM_BOT_TOKEN"),
             telegram_chat_id=_env("TELEGRAM_CHAT_ID"),
+            gemini_api_key=_env("GEMINI_API_KEY"),
+            gemini_model=_env("GEMINI_MODEL"),
             callmebot_phone=_env("CALLMEBOT_PHONE"),
             callmebot_api_key=_env("CALLMEBOT_API_KEY"),
             google_credentials_json=_env("GOOGLE_CALENDAR_CREDENTIALS_JSON"),

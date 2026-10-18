@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 from .config import Config
 from .gcal import GoogleCalendar, build_calendar
@@ -23,13 +24,14 @@ class Services:
     store: Store
     sender: Telegram | CallMeBot
     gcal: GoogleCalendar | None
+    ai: Any = None  # ai.Gemini when GEMINI_API_KEY is set
     fixed_now: datetime | None = None  # previews and tests pin the clock
 
     @classmethod
     def from_config(cls, config: Config, fixtures: str | None = None,
                     now: datetime | None = None, store: Store | None = None,
                     sender: Telegram | CallMeBot | None = None,
-                    gcal: GoogleCalendar | None = None) -> "Services":
+                    gcal: GoogleCalendar | None = None, ai: Any = None) -> "Services":
         missing = config.missing()
         if missing and not fixtures:
             log.warning("Missing environment variables: %s", ", ".join(missing))
@@ -48,5 +50,13 @@ class Services:
                                        chunk_size=config.whatsapp_chunk_size, dry_run=dry_run),
             gcal=gcal if gcal is not None or fixtures else build_calendar(
                 config.google_credentials_json, config.google_calendar_ids),
+            ai=ai if ai is not None or fixtures else _build_ai(config),
             fixed_now=now,
         )
+
+
+def _build_ai(config: Config):
+    if not config.gemini_api_key:
+        return None
+    from .ai import Gemini
+    return Gemini(config.gemini_api_key, config.gemini_model)

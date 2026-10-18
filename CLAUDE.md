@@ -51,7 +51,7 @@ Mesa-Nexus-Bot/
 ```bash
 cd Mesa-Nexus-Bot
 pip install -r requirements-dev.txt
-pytest -q                                   # must stay green (32 tests, offline)
+pytest -q                                   # must stay green (37 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
 python -m mesabot.cli ask "when is my next SQL class" --fixtures tests/fixtures --now 2026-10-19T19:00:00+05:30
 python -m mesabot.cli check                 # with real env vars: Nexus + Calendar connectivity
@@ -76,6 +76,7 @@ Preview with fixtures uses a temporary log directory, so it never touches the re
 | `ATTENDANCE_THRESHOLD` / `ATTENDANCE_AT_RISK_MARGIN` | 75 / 1 |
 | `ATTENDANCE_UNTRACKED_COURSES` | Comma list, default `AI Workshops,Career Readiness,Workshops,Mesa Startup Lab` |
 | `ACTION_LOOKBACK_DAYS` | Undated actionable announcements stay visible this many days (7) |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | Optional free-text answers via Gemini (`ai.py`); the model is auto-picked from the key's list unless pinned |
 | `CARRY_FORWARD` | `true` → include the previous term's unresolved items. Default `false` (the user asked to hide Term 1) |
 | `WHATSAPP_CHUNK_SIZE` | 1400 |
 
@@ -197,6 +198,18 @@ announcement keyword search, in that order).
 `done` scores candidates (flagged URLs, attachments, pending items, carried attendance) by token overlap plus a substring bonus.
 If the best matches come from more than one source, the bot asks for a clearer keyword. Matches inside one announcement are marked together.
 
+## Free-text questions: rules first, then Gemini (`bot.answer_question`)
+1. `quick_answer`: high-confidence patterns answered locally. "how many X classes <period>" (`answer_count` with
+   `parse_period`: today, tomorrow, this/next week, this/next month, next N days, a weekday), "can I skip X"
+   (`answer_skip`), next X class, score in X, who teaches X, feedback.
+2. If `GEMINI_API_KEY` is set: `ai.Gemini.answer` uses REST `generateContent` with function calling over `ai.NexusTools`
+   (get_schedule, get_attendance, get_assignments, get_grades, get_courses, search_announcements, get_pending). Results
+   are trimmed. The model turn is echoed back verbatim so thought signatures survive. The last 6 exchanges are remembered
+   for 30 minutes. The model is picked from `GET /models`: Flash only, stable > preview, full > lite, newest first.
+   On 404/429/5xx it moves to the next model.
+3. Otherwise, or if Gemini fails: `rule_answer`, the older keyword router.
+The user chose Gemini's free tier (Oct 2026) over a paid Claude key; the README states the free-tier privacy trade-off.
+
 ## Inbound transport
 Telegram: `TelegramPoller` long-polls `getUpdates` (timeout 50s) in a daemon thread started by `create_app`, and stores the
 offset in `meta.telegram_offset`. It calls `deleteWebhook` and `setMyCommands` at start, and maps `/cmd@bot args` to `cmd args`
@@ -218,14 +231,14 @@ with underscores are left alone. If Telegram rejects the markup, the message is 
 ## Status
 **Built (Oct 2026):** everything above: four scheduled messages, JSON log, regex extraction, term awareness and carry-forward,
 attendance maths, MRS tracker, `done` handling, command and NL bot, Telegram channel with polling chat (switched from CallMeBot
-on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 32 tests. Live on Railway since 18 Oct 2026; Telegram connected.
+on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 37 tests. Free-text answers: quick rules + optional Gemini (free tier). Live on Railway since 18 Oct 2026; Telegram connected.
 Previous-term items hidden by default (`CARRY_FORWARD`), and messages restyled (urgency dots, CAPS headers) at the user's request. Dry-run on real Nexus data (18 Oct) fixed two
 noise bugs: past-dated announcements, and assignment notifications.
 
 **Pending / ideas:**
 - First live run on Railway: the client follows the MCP Streamable HTTP spec at `/mcp/<token>`, but the sandbox could not reach
   students.mesaschool.co.in, so the real transport is unverified. Check the logs on the first deploy.
-- An optional LLM fallback for open questions (e.g. Claude with Nexus tools) when the rule-based router finds nothing.
+- Gemini path is tested against a fake API only; confirm on the first real key (check logs for "Gemini models:").
 - Pull assignment briefs (`get_assignment`) into the 24h alert for attachments and rubric links.
 - Detect MRS completion automatically if Nexus exposes it.
 - Twilio signature validation (currently a shared secret in the URL).

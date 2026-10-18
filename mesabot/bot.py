@@ -9,6 +9,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Callable
 
 from . import messages as m
+from .attendance import is_untracked, margin
 from .items import Item, World, attendance_key
 from .nexus import NexusError
 from .parsing import MONTHS
@@ -19,17 +20,24 @@ from .timeutil import (IST, WEEKDAYS, end_of_day, fmt_day, fmt_dt, fmt_relative,
 
 log = logging.getLogger(__name__)
 
-HELP = """🤖 *Mesa bot commands*
-• *due* — due today and this week
-• *today* — today's timetable + action items
-• *week* — the week ahead
-• *attendance* — attendance % with danger flags
-• *grades* — all released marks
-• *pending* — everything not submitted / not done
-• *mrs* — this week's MRS module status
-• *schedule <day>* — e.g. schedule monday, schedule tomorrow, schedule 24 oct
-• *done <keyword>* — e.g. done mrs, done opt-in form, done case.pdf
-Or just ask: "when is my next SQL class", "what did I score in Art of Selling", "am I at risk of low attendance", "what announcements came this week"."""
+HELP = """*🤖 MESA BOT*
+
+*Commands*
+`due` · due today and this week
+`today` · today's classes and to-dos
+`week` · the week ahead
+`attendance` · % per course, with danger flags
+`grades` · released marks
+`pending` · everything still to do
+`mrs` · this week's MRS module
+`schedule monday` · classes on a day
+`done mrs` · tick something off
+
+*Or just ask*
+_how many Data 102 classes next week?_
+_can I skip SQL tomorrow?_
+_what did I score in Art of Selling?_
+_what announcements came this week?_"""
 
 
 def handle_message(svc: Services, text: str, now: datetime | None = None) -> str:
@@ -58,7 +66,7 @@ def route(world: World, text: str) -> str:
     }
     if low in simple:
         return simple[low](world)
-    return answer_question(world, low)
+    return answer_question(world, low, original=text)
 
 
 # ---- commands ----------------------------------------------------------------------------
@@ -278,9 +286,43 @@ def _since_days(q: str) -> int:
     return 14
 
 
-def answer_question(world: World, q: str) -> str:
+def answer_question(world: World, q: str, original: str | None = None) -> str:
+    """Quick rules for common questions, then Gemini (if configured), then keyword rules."""
     course = match_course(q, world.courses, prefer_term=world.ctx.active_name)
+    quick = quick_answer(world, q, course)
+    if quick:
+        return quick
+    if world.svc.ai:
+        try:
+            from .ai import NexusTools, system_prompt
+            return world.svc.ai.answer(original or q, NexusTools(world), system_prompt(world))
+        except Exception as exc:  # noqa: BLE001 - quota, network, model changes: fall back to rules
+            log.warning("Gemini failed, using rules: %s", exc)
+    return rule_answer(world, q, course)
 
+
+COUNT_RE = re.compile(r"\b(how many|number of|count)\b.*\b(class|classes|sessions?|lectures?)\b")
+SKIP_RE = re.compile(r"\b(skip|bunk|miss|leave)\b")
+
+
+def quick_answer(world: World, q: str, course: dict[str, Any] | None) -> str | None:
+    """High-confidence patterns only; anything else goes to Gemini."""
+    if re.search(r"\bfeedback\b", q):
+        return answer_feedback(world, q)
+    if COUNT_RE.search(q):
+        return answer_count(world, q, course)
+    if course and SKIP_RE.search(q):
+        return answer_skip(world, course)
+    if course and re.search(r"\b(next|when)\b", q) and re.search(r"\b(class|session|lecture)\b", q):
+        return answer_next_class(world, course)
+    if course and re.search(r"\b(score|scored|marks?|grades?|result|got)\b", q):
+        return answer_scores(world, course)
+    if course and re.search(r"\b(who teaches|teacher|instructor|professor|linkedin|taught)\b", q):
+        return answer_instructor(world, course)
+    return None
+
+
+def rule_answer(world: World, q: str, course: dict[str, Any] | None) -> str:
     if re.search(r"\bfeedback\b", q):
         return answer_feedback(world, q)
     if re.search(r"\b(score|scored|marks?|grades?|result|gpa|cgpa|got in)\b", q):
@@ -311,14 +353,112 @@ def answer_question(world: World, q: str) -> str:
     return answer_search(world, q)
 
 
+def course_events(events: list[dict[str, Any]], course: dict[str, Any] | None) -> list[dict[str, Any]]:
+    events = [e for e in events if not e.get("cancelled") and e.get("type") != "holiday"]
+    if not course:
+        return events
+    title_norm = normalize(course.get("title"))
+    subject = tokens((course.get("title") or "").split(" with ")[0])
+    return [e for e in events if normalize(e.get("course")) == title_norm
+            or (subject and subject <= tokens(f"{e.get('title')} {e.get('course')}"))]
+
+
+def parse_period(q: str, now: datetime) -> tuple[datetime, datetime, str]:
+    """(start, end, label) for 'today', 'tomorrow', 'this/next week', 'this/next month',
+    'next N days', a weekday; default: the next 7 days."""
+    today = start_of_day(now)
+    if "tomorrow" in q:
+        d = today + timedelta(days=1)
+        return d, d + timedelta(days=1), f"tomorrow ({fmt_day(d)})"
+    if "today" in q:
+        return today, today + timedelta(days=1), "today"
+    if "next week" in q:
+        start = week_start(now) + timedelta(days=7)
+        return start, start + timedelta(days=7), f"next week ({fmt_day(start)} to {fmt_day(start + timedelta(days=6))})"
+    if re.search(r"\b(this|the) week\b|\bweek\b", q):
+        return today, week_end(now), f"this week (till {fmt_day(week_end(now))})"
+    if "next month" in q:
+        first = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
+        nxt = (first + timedelta(days=32)).replace(day=1)
+        return first, nxt, f"in {first.strftime('%B')}"
+    if "month" in q:
+        nxt = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
+        return today, nxt, f"for the rest of {today.strftime('%B')}"
+    m = re.search(r"next (\d{1,2}) days", q)
+    if m:
+        n = int(m.group(1))
+        return today, today + timedelta(days=n), f"in the next {n} days"
+    for i, day in enumerate(WEEKDAYS):
+        if re.search(rf"\b{day}\b", q):
+            d = datetime.combine(next_weekday(now.date(), i), datetime.min.time(), IST)
+            return d, d + timedelta(days=1), f"on {fmt_day(d)}"
+    return today, today + timedelta(days=7), "in the next 7 days"
+
+
+def _course_attendance(world: World, course: dict[str, Any]) -> dict[str, Any] | None:
+    key = normalize(course.get("title"))
+    for r in world.nexus.get_attendance_summary().get("courses", []):
+        if normalize(r.get("course")) == key:
+            return r
+    return None
+
+
+def answer_count(world: World, q: str, course: dict[str, Any] | None) -> str:
+    start, end, label = parse_period(q, world.now)
+    events = course_events(world.timetable(start, end), course)
+    counted = [e for e in events if e.get("attendanceRequired")] if not course else events
+    name = m.short_course(course.get("title")) if course else "classes with attendance"
+    noun = "class" if len(counted) == 1 else "classes"
+    if not counted:
+        return f"*📅 No {name} {'classes ' if course else ''}{label}*"
+    title = (f"*📅 {len(counted)} {name} {noun} {label}*" if course
+             else f"*📅 {len(counted)} {name} {label}*")
+    lines = [title]
+    for e in counted:
+        s = parse_iso(e.get("start"))
+        lines.append(f"{fmt_day(s)} " + m.session_line(e) if s else m.session_line(e))
+    if course and counted:
+        rec = _course_attendance(world, course)
+        if rec and rec.get("total"):
+            a, t, n = int(rec["attended"]), int(rec["total"]), len([e for e in counted if e.get("attendanceRequired")])
+            can_miss, need = margin(a, t, world.cfg.attendance_threshold)
+            lines.append("")
+            lines.append(f"You're at *{a / t * 100:.0f}%* ({a}/{t}). "
+                         + (f"Attend the next *{need}* in a row to get back to {world.cfg.attendance_threshold:g}%."
+                            if need else ("You can't miss any." if can_miss == 0 else f"You can miss *{can_miss}*."))
+                         + (f" Attend all {n} → *{(a + n) / (t + n) * 100:.0f}%*." if n else ""))
+    return "\n".join(lines)
+
+
+def answer_skip(world: World, course: dict[str, Any]) -> str:
+    name = m.short_course(course.get("title"))
+    if is_untracked(course.get("title") or "", world.cfg.untracked_courses):
+        return f"*{name}* doesn't track attendance, so skipping won't affect your %."
+    now = world.now
+    upcoming = [e for e in course_events(world.timetable(now, now + timedelta(days=14)), course)
+                if e.get("attendanceRequired")]
+    rec = _course_attendance(world, course)
+    if not rec or not rec.get("total"):
+        return (f"*{name}*: no attendance taken yet, so every class counts from the start. "
+                f"{len(upcoming)} {'class' if len(upcoming) == 1 else 'classes'} with attendance in the next 2 weeks.")
+    a, t = int(rec["attended"]), int(rec["total"])
+    can_miss, need = margin(a, t, world.cfg.attendance_threshold)
+    thr = f"{world.cfg.attendance_threshold:g}%"
+    if need:
+        head = f"🔴 *Don't skip {name}.* You're at *{a / t * 100:.0f}%* ({a}/{t}), below {thr}. Attend the next *{need}* in a row to recover."
+    elif can_miss == 0:
+        head = f"🟠 *Better not.* {name} is at *{a / t * 100:.0f}%* ({a}/{t}). Missing one drops you to *{a / (t + 1) * 100:.0f}%*, below {thr}."
+    else:
+        head = f"🟢 *Yes, you can skip {can_miss}* {name} {'class' if can_miss == 1 else 'classes'} and stay at or above {thr}. Now *{a / t * 100:.0f}%* ({a}/{t})."
+    nxt = parse_iso(upcoming[0]["start"]) if upcoming else None
+    n = len(upcoming)
+    tail = f"\n{n} {name} {'class' if n == 1 else 'classes'} in the next 2 weeks" + (f", next {fmt_dt(nxt)}." if nxt else ".")
+    return head + tail
+
+
 def answer_next_class(world: World, course: dict[str, Any] | None) -> str:
     now = world.now
-    events = [e for e in world.timetable(now, now + timedelta(days=21)) if not e.get("cancelled")]
-    if course:
-        title_norm = normalize(course.get("title"))
-        subject = tokens((course.get("title") or "").split(" with ")[0])
-        events = [e for e in events if normalize(e.get("course")) == title_norm
-                  or (subject and subject <= tokens(f"{e.get('title')} {e.get('course')}"))]
+    events = course_events(world.timetable(now, now + timedelta(days=21)), course)
     events = [e for e in events if (parse_iso(e.get("end")) or now) > now]
     name = m.short_course(course.get("title")) if course else "class"
     if not events:
@@ -366,7 +506,6 @@ def answer_attendance(world: World, course: dict[str, Any] | None) -> str:
             rec = next((r for r in summary.get("courses", []) if normalize(r.get("course")) == key), None)
             if not rec:
                 return f"No attendance recorded for {m.short_course(course.get('title'))} yet."
-            from .attendance import margin
             can_miss, need = margin(rec["attended"], rec["total"], world.cfg.attendance_threshold)
             return (f"{m.short_course(rec['course'])}: {rec['percentage']}% ({rec['attended']}/{rec['total']}) — "
                     + (f"need {need} in a row to recover" if need else f"can miss {can_miss} more"))

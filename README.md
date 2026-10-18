@@ -63,6 +63,19 @@ The bot calls `https://students.mesaschool.co.in/mcp/<token>`, as the Nexus MCP 
 
 Without these, messages say *"Google Calendar not connected"* and everything else works.
 
+### Optional: let it answer any question (free, Google Gemini)
+Without this, the bot answers commands and common questions with built-in rules. With it, anything else
+("how many SQL classes before Diwali?", "which day this week is free after 2pm?") goes to Gemini, which reads
+your Nexus data and replies. Follow-up questions work too, because it remembers the last few messages for 30 minutes.
+1. Go to **[aistudio.google.com](https://aistudio.google.com)** → sign in with Google → **Get API key** → **Create API key**.
+2. In Railway → Variables, add `GEMINI_API_KEY` = that key, then let Railway redeploy.
+
+- **Cost:** free, within Google's daily free-tier limits (they change from time to time). If the limit is hit,
+  the bot falls back to its built-in rules.
+- **Privacy:** on Google's free tier, what is sent may be used to improve Google's products. That includes your question
+  and the Nexus data the bot looks up to answer it (classes, attendance, marks, announcements). Common questions
+  answered by the built-in rules never go to Google.
+
 ---
 
 ## All environment variables
@@ -83,6 +96,8 @@ Without these, messages say *"Google Calendar not connected"* and everything els
 | `ACTION_LOOKBACK_DAYS` | optional | Show undated action items posted in the last N days. Default `7` |
 | `CARRY_FORWARD` | optional | `true` also shows the previous term's unsubmitted work and low attendance. Default `false` |
 | `WEBHOOK_SECRET` | optional | Enables `/webhook` (other relays) and `POST /run/<job>?key=…` (run a job now) |
+| `GEMINI_API_KEY` | optional | Free Google Gemini key: the bot answers any question in plain English (see below) |
+| `GEMINI_MODEL` | optional | Pin a Gemini model; by default the bot picks the best free Flash model your key can use |
 | `CALLMEBOT_PHONE` / `CALLMEBOT_API_KEY` | legacy | WhatsApp via CallMeBot, used only when `TELEGRAM_BOT_TOKEN` is not set |
 | `LOG_LEVEL` | optional | Default `INFO` |
 

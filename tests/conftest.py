@@ -15,9 +15,9 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 @pytest.fixture
 def make_svc(tmp_path):
-    def _make(now: str = "2026-10-19T08:00:00+05:30", **overrides) -> Services:
+    def _make(now: str = "2026-10-19T08:00:00+05:30", ai=None, **overrides) -> Services:
         cfg = dataclasses.replace(Config(), data_dir=str(tmp_path), dry_run=True, **overrides)
-        svc = Services.from_config(cfg, fixtures=FIXTURES, now=parse_iso(now))
+        svc = Services.from_config(cfg, fixtures=FIXTURES, now=parse_iso(now), ai=ai)
         svc.sender.printer = lambda _text: None
         return svc
     return _make
