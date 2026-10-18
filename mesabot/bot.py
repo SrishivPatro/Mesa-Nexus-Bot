@@ -375,6 +375,9 @@ def parse_period(q: str, now: datetime) -> tuple[datetime, datetime, str]:
     if "next week" in q:
         start = week_start(now) + timedelta(days=7)
         return start, start + timedelta(days=7), f"next week ({fmt_day(start)} to {fmt_day(start + timedelta(days=6))})"
+    if re.search(r"\b(this|the) week\b|\bweek\b", q) and now.weekday() == 6:
+        start = today + timedelta(days=1)  # on a Sunday, "this week" means the coming one
+        return start, start + timedelta(days=7), f"this week ({fmt_day(start)} to {fmt_day(start + timedelta(days=6))})"
     if re.search(r"\b(this|the) week\b|\bweek\b", q):
         return today, week_end(now), f"this week (till {fmt_day(week_end(now))})"
     if "next month" in q:
@@ -426,7 +429,7 @@ def answer_count(world: World, q: str, course: dict[str, Any] | None) -> str:
             lines.append(f"You're at *{a / t * 100:.0f}%* ({a}/{t}). "
                          + (f"Attend the next *{need}* in a row to get back to {world.cfg.attendance_threshold:g}%."
                             if need else ("You can't miss any." if can_miss == 0 else f"You can miss *{can_miss}*."))
-                         + (f" Attend all {n} → *{(a + n) / (t + n) * 100:.0f}%*." if n else ""))
+                         + (f" Attend {'it' if n == 1 else 'all ' + str(n)} → *{(a + n) / (t + n) * 100:.0f}%*." if n else ""))
     return "\n".join(lines)
 
 

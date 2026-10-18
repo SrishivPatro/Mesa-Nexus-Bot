@@ -105,5 +105,7 @@ def test_commands_and_questions(make_svc):
     assert "Track opt-in" in handle_message(svc, "what announcements came this week")
     assert "Prof. D" in handle_message(svc, "who teaches data 102")
     assert "MESA BOT" in handle_message(svc, "help")
+    week = handle_message(svc, "How many classes do I have next week")
+    assert "Orientation" not in week and "classes with attendance next week" in week
     assert "DUE TODAY" in handle_message(svc, "due")
     assert "Resume Stress Test" in handle_message(svc, "mrs")

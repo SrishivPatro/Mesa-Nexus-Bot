@@ -61,3 +61,6 @@ def test_match_course():
     assert match_course("when is my next finance class", COURSES)["title"] == "Finance with B"
     assert match_course("what did i score in sql", COURSES)["title"] == "SQL with F"
     assert match_course("hello there", COURSES) is None
+    with_week = COURSES + [{"title": "Orientation Week", "term": "Term 1", "startDate": "2026-08-10", "endDate": "2026-08-12"}]
+    assert match_course("how many classes do i have next week", with_week) is None
+    assert match_course("so tomorrow no classes", with_week) is None

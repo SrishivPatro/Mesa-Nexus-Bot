@@ -13,6 +13,18 @@
    "endDate": null
   },
   {
+   "id": "c00",
+   "title": "Orientation Week",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-08-10",
+   "endDate": "2026-08-12"
+  },
+  {
    "id": "c1",
    "title": "AI Workshops",
    "code": null,

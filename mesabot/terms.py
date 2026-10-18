@@ -147,10 +147,22 @@ def detect_terms(courses: list[dict[str, Any]], today: date) -> TermContext:
     return TermContext(terms=terms, active=active, previous=previous, course_term=course_term)
 
 
+# Everyday words that also appear in course names ("Orientation Week", "Business Sprint Lab"):
+# they must never pick a course on their own.
+_QUESTION_WORDS = {
+    "week", "weeks", "weekly", "day", "days", "month", "today", "tomorrow", "yesterday", "next", "last", "this",
+    "class", "classes", "session", "sessions", "lecture", "lectures", "how", "many", "much", "what", "when",
+    "where", "who", "which", "have", "do", "does", "did", "my", "me", "can", "could", "should", "will", "is",
+    "are", "am", "skip", "bunk", "miss", "attend", "attendance", "score", "scored", "marks", "mark", "grade",
+    "grades", "got", "get", "teaches", "teach", "time", "total", "left", "remaining", "any", "all", "so", "no",
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning", "evening",
+}
+
+
 def match_course(question: str, courses: list[dict[str, Any]],
                  prefer_term: str | None = None) -> dict[str, Any] | None:
     """Best course for free text like 'my next Finance class' or 'Art of Selling'."""
-    asked = tokens(question)
+    asked = tokens(question) - _QUESTION_WORDS
     best: tuple[float, dict[str, Any] | None] = (0.0, None)
     for course in courses:
         title = course.get("title") or ""
