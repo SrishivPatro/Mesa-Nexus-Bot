@@ -72,12 +72,21 @@ def test_gemini_falls_back_to_next_model_on_quota(make_svc):
     assert any("gemini-9-flash-lite:generateContent" in c[1] for c in http.calls)
 
 
-def test_quick_rules_skip_gemini(make_svc):
+def test_every_free_text_question_goes_to_gemini(make_svc):
     http = FakeGeminiHTTP()
-    svc = make_svc("2026-10-19T19:00:00+05:30", ai=Gemini("k", http=http))
+    svc = make_svc("2026-10-18T16:46:00+05:30", ai=Gemini("k", http=http))
+    handle_message(svc, "How many classes do I have next week")
+    body = [c for c in http.calls if c[0] == "POST"][0][2]
+    prompt = body["systemInstruction"]["parts"][0]["text"]
+    assert "next week = Mon 19 Oct to Sun 25 Oct" in prompt       # explicit dates, no guessing
+    assert "Today is Sunday" in prompt
+    assert body["contents"][-1]["parts"][0]["text"] == "How many classes do I have next week"
+
+
+def test_rules_answer_when_gemini_is_not_configured(make_svc):
+    svc = make_svc("2026-10-19T19:00:00+05:30")
     assert "Better not" in handle_message(svc, "can i skip data 102")
     assert "2 SQL classes" in handle_message(svc, "how many sql classes this month")
-    assert not [c for c in http.calls if c[0] == "POST"]
 
 
 def test_gemini_failure_falls_back_to_rules(make_svc):

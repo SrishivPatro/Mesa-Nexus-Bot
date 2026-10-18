@@ -287,18 +287,16 @@ def _since_days(q: str) -> int:
 
 
 def answer_question(world: World, q: str, original: str | None = None) -> str:
-    """Quick rules for common questions, then Gemini (if configured), then keyword rules."""
-    course = match_course(q, world.courses, prefer_term=world.ctx.active_name)
-    quick = quick_answer(world, q, course)
-    if quick:
-        return quick
+    """Every free-text question goes to Gemini, which understands context and follow-ups.
+    The pattern rules are only a backup for when Gemini isn't configured or fails."""
     if world.svc.ai:
         try:
             from .ai import NexusTools, system_prompt
             return world.svc.ai.answer(original or q, NexusTools(world), system_prompt(world))
         except Exception as exc:  # noqa: BLE001 - quota, network, model changes: fall back to rules
             log.warning("Gemini failed, using rules: %s", exc)
-    return rule_answer(world, q, course)
+    course = match_course(q, world.courses, prefer_term=world.ctx.active_name)
+    return quick_answer(world, q, course) or rule_answer(world, q, course)
 
 
 COUNT_RE = re.compile(r"\b(how many|number of|count)\b.*\b(class|classes|sessions?|lectures?)\b")

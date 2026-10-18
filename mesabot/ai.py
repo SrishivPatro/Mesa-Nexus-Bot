@@ -37,7 +37,12 @@ _SKIP_MODEL = re.compile(r"image|tts|audio|live|embed|vision|thinking-exp|roboti
 SYSTEM_PROMPT = """You are the Telegram assistant of one student at Mesa School of Business (India).
 Answer only from the tools; never invent classes, marks, dates or links. If the data is missing, say so.
 It is now {now} in India (Asia/Kolkata). Give times in India time, like "9:30 am", and dates like "Mon 26 Oct".
-"This week" means Monday to Sunday of the current week; "next week" means the following Monday to Sunday.
+Dates to use: today = {today}; tomorrow = {tomorrow}; this week = {this_week}; next week = {next_week}.{sunday_note}
+Whenever an answer depends on a date range, say which dates you used (e.g. "Mon 19 – Sun 25 Oct").
+Understand what the student means from context and from the earlier messages, not from single words:
+"tomorrow no classes?" is a question about tomorrow's timetable; "classes next week" means all classes unless a
+course is named. Match a course only when the student clearly names it (e.g. "Data", "SQL", "selling").
+Before answering, fetch the data you need with the tools; never answer from memory of an earlier day.
 Attendance: a course must stay at or above {threshold}% of sessions that take attendance. get_attendance already
 returns can_miss (classes the student can still skip) and need (classes in a row needed to recover); use them.
 Only sessions with attendance_required=true count. These courses do not track attendance: {untracked}.
@@ -309,8 +314,21 @@ class NexusTools:
 
 
 def system_prompt(world) -> str:
+    now = world.now.astimezone(IST)
+    day = now.date()
+    monday = day - timedelta(days=day.weekday())
+
+    def span(start) -> str:
+        end = start + timedelta(days=6)
+        return f"{fmt_day(start)} to {fmt_day(end)} ({start.isoformat()} to {end.isoformat()})"
     return SYSTEM_PROMPT.format(
-        now=world.now.astimezone(IST).strftime("%A %d %B %Y, %I:%M %p"),
+        today=f"{fmt_day(day)} ({day.isoformat()})",
+        tomorrow=f"{fmt_day(day + timedelta(days=1))} ({(day + timedelta(days=1)).isoformat()})",
+        this_week=span(monday),
+        next_week=span(monday + timedelta(days=7)),
+        sunday_note=(" Today is Sunday, so \"this week\" most likely means the coming week; say which you used."
+                     if day.weekday() == 6 else ""),
+        now=now.strftime("%A %d %B %Y, %I:%M %p"),
         threshold=f"{world.cfg.attendance_threshold:g}",
         untracked=", ".join(world.cfg.untracked_courses),
     )

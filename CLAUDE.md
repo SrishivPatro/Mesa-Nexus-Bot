@@ -51,7 +51,7 @@ Mesa-Nexus-Bot/
 ```bash
 cd Mesa-Nexus-Bot
 pip install -r requirements-dev.txt
-pytest -q                                   # must stay green (37 tests, offline)
+pytest -q                                   # must stay green (38 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
 python -m mesabot.cli ask "when is my next SQL class" --fixtures tests/fixtures --now 2026-10-19T19:00:00+05:30
 python -m mesabot.cli check                 # with real env vars: Nexus + Calendar connectivity
@@ -198,16 +198,20 @@ announcement keyword search, in that order).
 `done` scores candidates (flagged URLs, attachments, pending items, carried attendance) by token overlap plus a substring bonus.
 If the best matches come from more than one source, the bot asks for a clearer keyword. Matches inside one announcement are marked together.
 
-## Free-text questions: rules first, then Gemini (`bot.answer_question`)
-1. `quick_answer`: high-confidence patterns answered locally. "how many X classes <period>" (`answer_count` with
-   `parse_period`: today, tomorrow, this/next week, this/next month, next N days, a weekday), "can I skip X"
-   (`answer_skip`), next X class, score in X, who teaches X, feedback.
-2. If `GEMINI_API_KEY` is set: `ai.Gemini.answer` uses REST `generateContent` with function calling over `ai.NexusTools`
-   (get_schedule, get_attendance, get_assignments, get_grades, get_courses, search_announcements, get_pending). Results
-   are trimmed. The model turn is echoed back verbatim so thought signatures survive. The last 6 exchanges are remembered
-   for 30 minutes. The model is picked from `GET /models`: Flash only, stable > preview, full > lite, newest first.
-   On 404/429/5xx it moves to the next model.
-3. Otherwise, or if Gemini fails: `rule_answer`, the older keyword router.
+## Free-text questions: Gemini first, rules as backup (`bot.answer_question`)
+The user wants the bot to understand context, not keywords. Pattern rules once mis-read "classes next week" as the
+course "Orientation Week". So:
+1. If `GEMINI_API_KEY` is set, **every** free-text message goes to `ai.Gemini.answer`: REST `generateContent` with
+   function calling over `ai.NexusTools` (get_schedule, get_attendance, get_assignments, get_grades, get_courses,
+   search_announcements, get_pending). The system prompt gives explicit dates for today, tomorrow, this week and next
+   week (plus a Sunday note), and asks the model to state the date range it used. Results are trimmed. The model turn is
+   echoed back verbatim so thought signatures survive. The last 6 exchanges are remembered for 30 minutes. The model is
+   picked from `GET /models`: Flash only, stable > preview, full > lite, newest first; on 404/429/5xx it moves to the
+   next model.
+2. Without a key, or when Gemini fails: `quick_answer` (count classes in a period, can I skip X, next X class, score in X,
+   who teaches X, feedback), then `rule_answer` (the older keyword router).
+   `terms.match_course` ignores everyday words (`_QUESTION_WORDS`) so they never pick a course.
+Exact commands (`due`, `today`, `attendance`…) stay deterministic and never call Gemini.
 The user chose Gemini's free tier (Oct 2026) over a paid Claude key; the README states the free-tier privacy trade-off.
 
 ## Inbound transport
@@ -231,7 +235,7 @@ with underscores are left alone. If Telegram rejects the markup, the message is 
 ## Status
 **Built (Oct 2026):** everything above: four scheduled messages, JSON log, regex extraction, term awareness and carry-forward,
 attendance maths, MRS tracker, `done` handling, command and NL bot, Telegram channel with polling chat (switched from CallMeBot
-on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 37 tests. Free-text answers: quick rules + optional Gemini (free tier). Live on Railway since 18 Oct 2026; Telegram connected.
+on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 38 tests. Free-text answers: quick rules + optional Gemini (free tier). Live on Railway since 18 Oct 2026; Telegram connected.
 Previous-term items hidden by default (`CARRY_FORWARD`), and messages restyled (urgency dots, CAPS headers) at the user's request. Dry-run on real Nexus data (18 Oct) fixed two
 noise bugs: past-dated announcements, and assignment notifications.
 
