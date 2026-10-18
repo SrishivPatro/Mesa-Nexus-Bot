@@ -1,0 +1,23 @@
+{
+ "reportCards": [],
+ "assignmentMarks": [
+  {
+   "assignmentId": "a2",
+   "assignment": "Mid-Term Assignment",
+   "course": "The Art of Selling with Prof. C",
+   "marks": "92.00",
+   "maxMarks": "100.00",
+   "feedback": null,
+   "releasedAt": "2026-10-10T11:42:20.104Z"
+  },
+  {
+   "assignmentId": "a3",
+   "assignment": "Mid-Term Assessment",
+   "course": "Fundamentals of Finance with Prof. B",
+   "marks": "33.50",
+   "maxMarks": "40.00",
+   "feedback": "Strong on ratios; revisit working-capital cycle.",
+   "releasedAt": "2026-10-18T14:41:53.304Z"
+  }
+ ]
+}

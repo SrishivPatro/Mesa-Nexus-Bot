@@ -1,0 +1,70 @@
+{
+ "assignments": [
+  {
+   "id": "a1",
+   "title": "Session 4 Workbook",
+   "course": "Data Driven Decision Making with Prof. D",
+   "dueAt": "2026-09-10T18:29:00.000Z",
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "not_submitted"
+  },
+  {
+   "id": "a2",
+   "title": "Mid-Term Assignment",
+   "course": "The Art of Selling with Prof. C",
+   "dueAt": "2026-09-19T18:29:00.000Z",
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "submitted"
+  },
+  {
+   "id": "a3",
+   "title": "Mid-Term Assessment",
+   "course": "Fundamentals of Finance with Prof. B",
+   "dueAt": null,
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "not_submitted"
+  },
+  {
+   "id": "a4",
+   "title": "Session 1 SQL Warm-up",
+   "course": "SQL with F",
+   "dueAt": "2026-10-19T18:29:00.000Z",
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "not_submitted"
+  },
+  {
+   "id": "a5",
+   "title": "Metrics Pre-read Quiz",
+   "course": "Business Metrics and Mindset with E",
+   "dueAt": "2026-10-22T12:30:00.000Z",
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "not_submitted"
+  },
+  {
+   "id": "a6",
+   "title": "Data 102 Workbook 1",
+   "course": "Data 102 with Prof. D",
+   "dueAt": "2026-10-25T18:29:00.000Z",
+   "cutoffAt": null,
+   "allowLate": false,
+   "maxMarks": null,
+   "isGroup": false,
+   "submissionStatus": "not_submitted"
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+{
+ "name": "reminder-automation",
+ "tools": [
+  "get_me",
+  "get_schedule",
+  "list_assignments",
+  "list_notifications"
+ ],
+ "steps": "(fixture)"
+}

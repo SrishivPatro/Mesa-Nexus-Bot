@@ -227,10 +227,10 @@ class Nexus:
         """A new view with an empty memo (one per scheduled job or inbound message)."""
         return Nexus(self.client)
 
-    def _call(self, name: str, **args: Any) -> Any:
-        key = f"{name}:{json.dumps(args, sort_keys=True, default=str)}"
+    def _call(self, _tool: str, **args: Any) -> Any:
+        key = f"{_tool}:{json.dumps(args, sort_keys=True, default=str)}"
         if key not in self._memo:
-            self._memo[key] = self.client.call_tool(name, args)
+            self._memo[key] = self.client.call_tool(_tool, args)
         return self._memo[key]
 
     def get_me(self) -> dict[str, Any]:

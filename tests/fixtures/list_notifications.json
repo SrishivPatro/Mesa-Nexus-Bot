@@ -1,0 +1,38 @@
+{
+ "unreadCount": 3,
+ "notifications": [
+  {
+   "id": "x1",
+   "type": "announcement",
+   "title": "Term 2 Kick-off: Start-up Leader Session",
+   "body": "We're kicking off Term 2 …",
+   "read": false,
+   "createdAt": "2026-10-17T11:21:17.901Z",
+   "links": {
+    "announcementId": "n1"
+   }
+  },
+  {
+   "id": "x2",
+   "type": "system",
+   "title": "Your MRS eligibility is at risk",
+   "body": "No Resume Stress Test session yet this week. Finish one by Sunday 23:59 to keep your eligibility.",
+   "read": false,
+   "createdAt": "2026-10-21T02:54:02.547Z",
+   "links": {
+    "url": "/student/coach/abc"
+   }
+  },
+  {
+   "id": "x3",
+   "type": "assignment_new",
+   "title": "New assignment",
+   "body": "Data 102 Workbook 1",
+   "read": false,
+   "createdAt": "2026-10-18T12:53:44.259Z",
+   "links": {
+    "assignmentId": "a6"
+   }
+  }
+ ]
+}

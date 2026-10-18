@@ -1,0 +1,160 @@
+{
+ "courses": [
+  {
+   "id": "c0",
+   "title": "Start Strong",
+   "code": null,
+   "type": "core",
+   "term": "Pre-Term",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  },
+  {
+   "id": "c1",
+   "title": "AI Workshops",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  },
+  {
+   "id": "c2",
+   "title": "Career Readiness",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  },
+  {
+   "id": "c3",
+   "title": "Business Frameworks with Prof. A",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": "Prof. A",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-08-22",
+   "endDate": "2026-10-10"
+  },
+  {
+   "id": "c4",
+   "title": "Fundamentals of Finance with Prof. B",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": "Prof. B",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-08-17",
+   "endDate": "2026-10-08"
+  },
+  {
+   "id": "c5",
+   "title": "The Art of Selling with Prof. C",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": "Prof. C",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-08-21",
+   "endDate": "2026-10-10"
+  },
+  {
+   "id": "c6",
+   "title": "Data Driven Decision Making with Prof. D",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": "Prof. D",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-08-20",
+   "endDate": "2026-10-14"
+  },
+  {
+   "id": "c7",
+   "title": "Mesa Start-up Lab",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  },
+  {
+   "id": "c8",
+   "title": "Workshops",
+   "code": null,
+   "type": "core",
+   "term": "Term 1",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  },
+  {
+   "id": "c9",
+   "title": "Data 102 with Prof. D",
+   "code": null,
+   "type": "core",
+   "term": "Term 2",
+   "instructor": "Prof. D",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-10-18",
+   "endDate": "2026-12-18"
+  },
+  {
+   "id": "c10",
+   "title": "Business Metrics and Mindset with E",
+   "code": null,
+   "type": "core",
+   "term": "Term 2",
+   "instructor": "E",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-10-19",
+   "endDate": "2026-11-18"
+  },
+  {
+   "id": "c11",
+   "title": "SQL with F",
+   "code": null,
+   "type": "core",
+   "term": "Term 2",
+   "instructor": "F",
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": "2026-10-23",
+   "endDate": "2026-12-12"
+  },
+  {
+   "id": "c12",
+   "title": "Startup Leader",
+   "code": null,
+   "type": "core",
+   "term": "Term 2",
+   "instructor": null,
+   "instructorLinkedIn": null,
+   "description": null,
+   "startDate": null,
+   "endDate": null
+  }
+ ]
+}

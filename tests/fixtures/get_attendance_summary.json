@@ -1,0 +1,74 @@
+{
+ "courses": [
+  {
+   "course": "Data Driven Decision Making with Prof. D",
+   "term": "Term 1",
+   "attended": 9,
+   "total": 13,
+   "percentage": 69.2,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  },
+  {
+   "course": "The Art of Selling with Prof. C",
+   "term": "Term 1",
+   "attended": 12,
+   "total": 13,
+   "percentage": 92.3,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  },
+  {
+   "course": "Business Frameworks with Prof. A",
+   "term": "Term 1",
+   "attended": 4,
+   "total": 8,
+   "percentage": 50.0,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  },
+  {
+   "course": "Fundamentals of Finance with Prof. B",
+   "term": "Term 1",
+   "attended": 11,
+   "total": 13,
+   "percentage": 84.6,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  },
+  {
+   "course": "Career Readiness",
+   "term": "Term 1",
+   "attended": 1,
+   "total": 1,
+   "percentage": 100.0,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  },
+  {
+   "course": "Data 102 with Prof. D",
+   "term": "Term 2",
+   "attended": 3,
+   "total": 4,
+   "percentage": 75,
+   "participationAvg": 0,
+   "quizAvg": null,
+   "quizSessions": 0
+  }
+ ],
+ "missedSessions": [
+  {
+   "session": "Data 102 with Prof. D",
+   "course": "Data 102 with Prof. D",
+   "term": "Term 2",
+   "day": "Sunday, 18 Oct 2026",
+   "date": "2026-10-18T09:30:00+05:30",
+   "status": "absent"
+  }
+ ]
+}
