@@ -37,9 +37,10 @@ class NexusClient:
     """Minimal MCP client: initialize once, then tools/call. Re-initializes on session expiry."""
 
     def __init__(self, base_url: str, token: str, timeout: float = 30.0):
-        if not base_url or not token:
-            raise NexusError("NEXUS_MCP_TOKEN must be set")
-        base_url = base_url.rstrip("/")
+        # A missing token must not stop the app from starting: /health reports it,
+        # and every call raises a clear error until NEXUS_MCP_TOKEN is set.
+        self._missing = not base_url or not token
+        base_url = (base_url or "").rstrip("/")
         # Nexus documents token auth as https://students.mesaschool.co.in/mcp/<token>;
         # the token also goes in the Authorization header for servers that read it there.
         self.base_url = base_url if token in base_url else f"{base_url}/{token}"
@@ -117,6 +118,8 @@ class NexusClient:
         self._post({"jsonrpc": "2.0", "method": "notifications/initialized"}, expect_reply=False)
 
     def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
+        if self._missing:
+            raise NexusError("NEXUS_MCP_TOKEN is not set (Railway → Variables)")
         payload_args = {k: v for k, v in (arguments or {}).items() if v is not None}
         with self._lock:
             for attempt in range(3):
