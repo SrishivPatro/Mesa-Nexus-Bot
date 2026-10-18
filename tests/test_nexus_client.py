@@ -67,3 +67,10 @@ def test_initialize_call_sse_and_session_expiry(server):
     assert client.call_tool("get_grades")["tool"] == "get_grades"
     with pytest.raises(NexusError, match="nope"):
         client.call_tool("boom")
+
+
+def test_token_with_pasted_whitespace(server):
+    FakeMCP.seen.clear()
+    client = NexusClient(server, " tok\n")
+    assert client.call_tool("get_me")["tool"] == "get_me"
+    assert FakeMCP.seen[0][2] == "Bearer tok" and FakeMCP.seen[0][3] == "/mcp/tok"

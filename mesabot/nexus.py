@@ -37,6 +37,7 @@ class NexusClient:
     """Minimal MCP client: initialize once, then tools/call. Re-initializes on session expiry."""
 
     def __init__(self, base_url: str, token: str, timeout: float = 30.0):
+        token, base_url = (token or "").strip(), (base_url or "").strip()
         # A missing token must not stop the app from starting: /health reports it,
         # and every call raises a clear error until NEXUS_MCP_TOKEN is set.
         self._missing = not base_url or not token
@@ -137,6 +138,8 @@ class NexusClient:
                     if attempt == 2:
                         raise NexusError(f"Nexus unreachable ({type(exc).__name__})") from None
                     _time.sleep(2 ** attempt)
+                except requests.RequestException as exc:
+                    raise NexusError(f"Nexus request failed ({type(exc).__name__})") from None
             else:
                 raise NexusError("Nexus session could not be established")
         return _unwrap(name, reply)
@@ -246,7 +249,7 @@ class Nexus:
     def now(self) -> datetime:
         try:
             return parse_iso(self.get_me().get("now")) or now_ist()
-        except NexusError:
+        except (NexusError, requests.RequestException):
             return now_ist()
 
     def list_courses(self) -> list[dict[str, Any]]:

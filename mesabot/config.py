@@ -20,8 +20,9 @@ DEFAULT_NEXUS_URL = "https://students.mesaschool.co.in/mcp"
 
 
 def _env(name: str, default: str | None = None) -> str | None:
-    value = os.environ.get(name)
-    return value if value not in (None, "") else default
+    # Pasted secrets often carry a trailing newline or space; HTTP headers reject them.
+    value = (os.environ.get(name) or "").strip()
+    return value if value else default
 
 
 def _flag(name: str, default: bool) -> bool:

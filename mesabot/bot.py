@@ -34,8 +34,8 @@ Or just ask: "when is my next SQL class", "what did I score in Art of Selling", 
 
 def handle_message(svc: Services, text: str, now: datetime | None = None) -> str:
     text = (text or "").strip()
-    if not text:
-        return HELP
+    if not text or text.lower() in {"help", "hi", "hello", "menu", "commands", "?", "start"}:
+        return HELP  # no Nexus call needed
     world = World(svc, now)
     try:
         return route(world, text)
