@@ -70,9 +70,9 @@ def cmd_due(world: World) -> str:
     week = [i for i in items if i.due and end_of_day(now) < i.due <= max(week_end(now), now + timedelta(days=7))]
     overdue = [i for i in items if i.overdue(now) and i.kind == "assignment" and i not in today]
     return m.join([
-        ["📝 *Due today*"] + ([m.item_line(i, now) for i in today] or ["✅ Nothing due today."]),
-        ["🗓️ *Due this week*"] + ([m.item_line(i, now) for i in week] or ["✅ Nothing else this week."]),
-        (["⚠️ *Overdue*"] + [m.item_line(i, now) for i in overdue]) if overdue else [],
+        m.section("📝 DUE TODAY", [m.item_line(i, now) for i in today] or ["✅ Nothing due today"]),
+        m.section("🗓️ DUE THIS WEEK", [m.item_line(i, now) for i in week] or ["✅ Nothing else this week"]),
+        m.section("⚠️ OVERDUE", [m.item_line(i, now) for i in overdue]) if overdue else [],
     ])
 
 
@@ -82,8 +82,8 @@ def cmd_today(world: World) -> str:
     items = world.pending_items()
     soon = [i for i in items if not i.due or i.due <= now + timedelta(days=2)]
     return m.join([
-        [f"📅 *Today — {fmt_day(now)}*"] + m.timetable_section(events, "No classes today."),
-        ["📋 *Action items*"] + m.items_section(soon, now),
+        m.section(f"📅 TODAY · {fmt_day(now)}", m.timetable_section(events)),
+        m.section("📌 TO DO", m.items_section(soon, now)),
     ])
 
 
@@ -93,11 +93,11 @@ def cmd_week(world: World) -> str:
 
 def cmd_attendance(world: World) -> str:
     rows = world.attendance
-    lines = [f"🎯 *Attendance* (threshold {world.cfg.attendance_threshold:g}%)"]
+    lines = [f"*🎯 ATTENDANCE* _(need {world.cfg.attendance_threshold:g}%)_"]
     lines += m.attendance_full_section(world)
     missed = world.missed_sessions[:3]
     if missed:
-        lines.append("\n_Last missed:_ " + "; ".join(f"{s.get('session')} ({s.get('day')})" for s in missed))
+        lines.append("\n_Last missed: " + "; ".join(f"{m.short_course(s.get('session'))} ({s.get('day')})" for s in missed) + "_")
     if not any(r.alert for r in rows):
         lines.append("\n✅ No course is in danger.")
     return "\n".join(lines)
@@ -105,23 +105,21 @@ def cmd_attendance(world: World) -> str:
 
 def cmd_grades(world: World) -> str:
     grades = world.all_grades()
-    lines = ["📊 *Released grades*"]
-    lines += [m.grade_line(g, with_feedback=False) for g in grades] or ["_No marks released yet._"]
+    lines = [m.grade_line(g, with_feedback=False) for g in grades] or ["_No marks released yet_"]
     for card in world.report_cards():
-        lines.append(f"• Report card: {card.get('term') or card.get('name')}")
-    if grades:
-        lines.append('\n_Ask "feedback <assignment>" for the full feedback._')
-    return "\n".join(lines)
+        lines.append(f"🧾 Report card: {card.get('term') or card.get('name')}")
+    note = '_Send "feedback <assignment>" for the full feedback_' if grades else None
+    return "\n".join(m.section("📊 GRADES", ["\n\n".join(lines)], note))
 
 
 def cmd_pending(world: World) -> str:
     items = world.pending_items()
-    lines = ["📋 *Everything pending*"] + m.items_section(items, world.now)
+    lines = [f"*📌 PENDING ({len(items)})*"] + m.items_section(items, world.now)
     if items:
         lines.append(m.DONE_HINT)
     carried_att = [r for r in world.attendance if r.carried and r.alert]
     if carried_att:
-        lines.append("\n🚨 *Attendance carried forward*")
+        lines.append("\n*🎯 ATTENDANCE, CARRIED FORWARD*")
         lines += [m.attendance_line(r, world.cfg.attendance_threshold) for r in carried_att]
     return "\n".join(lines)
 
@@ -134,9 +132,9 @@ def cmd_mrs(world: World) -> str:
         status = f"✅ marked done{(' ' + fmt_dt(done_at)) if done_at else ''}"
     else:
         status = f"⏳ not done — due {fmt_dt(mrs['deadline'])} ({fmt_relative(mrs['deadline'], world.now)})"
-    return (f"🎙️ *MRS weekly session* (week of {fmt_day(parse_iso(mrs['week'] + 'T00:00:00+05:30'))})\n"
-            f"• Module: *{module}*\n• Status: {status}\n"
-            + ("" if mrs["done"] else '_Reply "done mrs" once you finish a complete session._'))
+    return (f"*🎙️ MRS WEEKLY SESSION*\n_week of {fmt_day(parse_iso(mrs['week'] + 'T00:00:00+05:30'))}_\n\n"
+            f"Module: *{module}*\n{status}"
+            + ("" if mrs["done"] else '\n\n_Reply "done mrs" once you finish a complete session_'))
 
 
 def parse_day(text: str, now: datetime) -> date | None:
@@ -330,7 +328,7 @@ def answer_next_class(world: World, course: dict[str, Any] | None) -> str:
         return f"No upcoming {name} sessions in the next 3 weeks{extra}."
     e = events[0]
     start = parse_iso(e["start"])
-    line = m.session_line(e)[2:]
+    line = m.session_line(e)
     return f"📅 Next {name}: *{fmt_dt(start)}* ({fmt_relative(start, now)})\n{line}" + (
         f"\nInstructor: {e['instructor']}" if e.get("instructor") else "")
 
@@ -342,7 +340,7 @@ def answer_scores(world: World, course: dict[str, Any] | None) -> str:
         grades = [g for g in grades if normalize(g.get("course")) == key]
         if not grades:
             return f"No marks released yet for {m.short_course(course.get('title'))}."
-        return "\n".join([f"📊 *{m.short_course(course.get('title'))}*"] + [m.grade_line(g) for g in grades])
+        return "\n\n".join([f"*📊 {m.short_course(course.get('title')).upper()}*"] + [m.grade_line(g) for g in grades])
     return cmd_grades(world)
 
 
@@ -376,7 +374,7 @@ def answer_attendance(world: World, course: dict[str, Any] | None) -> str:
     alerts = world.attendance_alerts()
     if not alerts:
         return f"✅ You're not at risk: every tracked course is at or above {world.cfg.attendance_threshold:g}% with room to spare.\n\n" + cmd_attendance(world)
-    return "\n".join(["🚨 *Yes — these need attention:*"] + [m.attendance_line(r, world.cfg.attendance_threshold) for r in alerts])
+    return "\n".join(["*🚨 Yes, these need attention*"] + [m.attendance_line(r, world.cfg.attendance_threshold) for r in alerts])
 
 
 def answer_announcements(world: World, q: str) -> str:

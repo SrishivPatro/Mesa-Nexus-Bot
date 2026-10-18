@@ -51,7 +51,7 @@ mesa-bot/
 ```bash
 cd mesa-bot
 pip install -r requirements-dev.txt
-pytest -q                                   # must stay green (30 tests, offline)
+pytest -q                                   # must stay green (32 tests, offline)
 python -m mesabot.cli preview morning --fixtures tests/fixtures --now 2026-10-19T08:00:00+05:30
 python -m mesabot.cli ask "when is my next SQL class" --fixtures tests/fixtures --now 2026-10-19T19:00:00+05:30
 python -m mesabot.cli check                 # with real env vars: Nexus + Calendar connectivity
@@ -76,45 +76,43 @@ Preview with fixtures uses a temporary log directory, so it never touches the re
 | `ATTENDANCE_THRESHOLD` / `ATTENDANCE_AT_RISK_MARGIN` | 75 / 1 |
 | `ATTENDANCE_UNTRACKED_COURSES` | Comma list, default `AI Workshops,Career Readiness,Workshops,Mesa Startup Lab` |
 | `ACTION_LOOKBACK_DAYS` | Undated actionable announcements stay visible this many days (7) |
+| `CARRY_FORWARD` | `true` → include the previous term's unresolved items. Default `false` (the user asked to hide Term 1) |
 | `WHATSAPP_CHUNK_SIZE` | 1400 |
 
 ## The four scheduled messages (examples from `tests/fixtures`)
 
+Layout (`messages.py` docstring): one bold CAPS header per section; one urgency dot per item
+(⚠️ overdue · 🔴 < 24h · 🟠 < 3 days · 🟢 later · ⚪ no date); title on line one, details indented below;
+times in `code`; ✅ marks sessions that take attendance. The Calendar section is hidden when it isn't connected or is empty.
+
 **1 · Morning brief, daily 08:00 IST** (`run_morning_brief`). The "new grades" window covers the time since the last brief, at most 3 days.
 ```
-☀️ *Good morning, Test* — Mon 19 Oct
-_Term 2 · day 2, ends Fri 18 Dec_
+☀️ *Good morning, Test*
+_Mon 19 Oct · Term 2 · day 2_
 
-📅 *Today's timetable*
-• 9:30 am–11:00 am · Data 102 with Prof. D · Delta Classroom · Attendance: Y
-• 2:00 pm–8:00 pm · Building Time · Attendance: N
+*📅 TODAY*
+`09:30` *Data 102* ✅ · Delta Classroom
+`14:00` *Building Time* · till 8:00 pm
+_✅ = attendance taken_
 
-📋 *Pending action items*
-• [Assignment] Session 1 SQL Warm-up — SQL
-   due Mon 19 Oct, 11:59 pm (in 15h)
-• [Opt-In · Pre-Work · One-Pager] Term 2 Kick-off: Start-up Leader Session
-   due Tue 20 Oct, 5:00 pm (in 33h) · session Wed 21 Oct, 3:00 pm
-   📎 Super_Case.pdf
-• [Opt-In] Track opt-in: deadline extended till 21 Oct, 8 PM
-   due Wed 21 Oct, 8:00 pm (in 2d)
-   🔗 https://docs.google.com/forms/d/e/…/viewform
-• [MRS] MRS weekly session: Resume Stress Test
-   due Sun 25 Oct, 11:59 pm (in 6d)
-_Carried forward from Term 1:_
-• [Assignment · Term 1] Session 4 Workbook — Data Driven Decision Making
-   ⚠️ due Thu 10 Sep, 11:59 pm (38d overdue)
-_Reply "done <keyword>" to clear an item, e.g. "done mrs"._
+*📌 TO DO (8)*
+🔴 *Session 1 SQL Warm-up*
+      Mon 19 Oct, 11:59 pm · in 15h
+🟠 *Term 2 Kick-off: Start-up Leader Session* · opt-in, pre-work, one-pager
+      Tue 20 Oct, 5:00 pm · in 33h · session Wed 21 Oct, 3:00 pm
+      📎 Super_Case.pdf
+🟢 *MRS weekly session* · Resume Stress Test
+      Sun 25 Oct, 11:59 pm · in 6d
+_Reply "done <word>" to tick something off, e.g. done mrs_
 
-🚨 *Attendance alerts*
-• 🟠 Data 102: *75.0%* (3/4) — can't miss any more
-• 🔴 Data Driven Decision Making: *69.2%* (9/13) — below 75%, attend the next *3* in a row to recover _(Term 1, carried forward)_
+*🎯 ATTENDANCE*
+🟠 *Data 102* 75% (3/4)
+      can't miss any more
 
-📊 *New grades & feedback*
-• *Mid-Term Assessment* — Fundamentals of Finance: *33.5/40* _(released Sun 18 Oct)_
-   Feedback: Strong on ratios; revisit working-capital cycle.
-
-📆 *Google Calendar — today + next 48h*
-• Mon 19 Oct, 6:00 pm · Gym        ← illustrative; fixtures have no calendar
+*📊 NEW GRADES*
+📝 *Mid-Term Assessment* · Fundamentals of Finance
+      *33.5/40* · released Sun 18 Oct
+      _Strong on ratios; revisit working-capital cycle._
 ```
 
 **2 · Deadline alert, hourly at :05** (`run_deadline_check`). Sent only when something is new.
@@ -123,33 +121,29 @@ mandatory sessions, the MRS Sunday 23:59 deadline and Google Calendar events in 
 The same item is not repeated within 12h (`alert_history["due:<key>"]`). Prep items (pre-work, one-pager, case study,
 opt-in, pre-read) also get **one** reminder 48h before their session (`alert_history["pre48:<key>"]`).
 ```
-⏰ *Due within 24 hours*
-• [Assignment] Session 1 SQL Warm-up — SQL
-   due Mon 19 Oct, 11:59 pm (in 4h)
+*⏰ DUE IN THE NEXT 24 HOURS*
+🔴 *Session 1 SQL Warm-up*
+      Mon 19 Oct, 11:59 pm · in 4h
 
-🗓️ *48h heads-up: prep for an upcoming session*
-• Term 2 Kick-off: Start-up Leader Session — session Wed 21 Oct, 3:00 pm (in 44h)
-   prep due Tue 20 Oct, 5:00 pm
+*📚 PREP AHEAD · 48h heads-up*
+🗓️ *Term 2 Kick-off: Start-up Leader Session*
+      session Wed 21 Oct, 3:00 pm · in 44h
+      prep due Tue 20 Oct, 5:00 pm
 ```
 
 **3 · Grade alert, daily 18:00** (`run_grade_check`). The first run seeds `grade_alerts` with every existing mark
 (channel `seed`) and sends nothing. After that, each new `grade_key` (assignment + marks + feedback + releasedAt) is sent once.
 ```
 📊 *New grade released*
-• *Data 102 Workbook 1* — Data 102: *9/10* _(released Mon 19 Oct)_
-   Feedback: Neat.
+
+📝 *Data 102 Workbook 1* · Data 102
+      *9/10* · released Mon 19 Oct
+      _Neat._
 ```
 
 **4 · Weekly summary, Sunday 21:00** (`run_weekly_summary`). Covers the coming Monday to Sunday.
-```
-🗓️ *Week ahead* — Mon 19 Oct to Sun 25 Oct
-📝 *Due in the next 7 days*      (assignments + MRS)
-⚠️ *Still overdue*               (only if any)
-📣 *Flagged from announcements*  (deadline or session inside the week)
-📅 *Timetable*                   (grouped by day, Attendance Y/N)
-🎯 *Attendance*                  (every active-term course + carried-forward)
-📆 *Google Calendar*
-```
+Sections: 📝 DUE (assignments + MRS) · ⚠️ OVERDUE (if any) · 📣 FROM ANNOUNCEMENTS · 📅 TIMETABLE (grouped by day) ·
+🎯 ATTENDANCE (every active-term course) · 🗓️ CALENDAR (if connected).
 
 ## JSON log schema (`$DATA_DIR/mesa_log.json`)
 ```jsonc
@@ -180,8 +174,8 @@ Alert history entries older than 60 days are pruned. The file is written atomica
 2. **Active** = the term whose window contains today (on overlap, the newer one). Between terms, a term starting
    within 14 days is active early; otherwise the most recently ended term stays active.
 3. **Previous** = the latest term that ended before the active term started.
-4. Scope = active + previous. Previous-term items are **carried forward**: unsubmitted assignments (unless graded or
-   `done`) and courses below the threshold (until `done <course>`). Older terms are ignored.
+4. Scope = the active term only. With `CARRY_FORWARD=true` the previous term is included too: unsubmitted assignments
+   (unless graded or `done`) and courses below the threshold (until `done <course>`). Older terms are always ignored.
 5. A course's term comes from `list_courses` by title. A course-less assignment is placed by its due date.
    Nothing names a term in code, so Term 3 works with no changes.
 As of 18 Oct 2026, the real data has Term 1 = 10 Aug → 14 Oct and Term 2 = 18 Oct → 19 Dec.
@@ -224,13 +218,13 @@ with underscores are left alone. If Telegram rejects the markup, the message is 
 ## Status
 **Built (Oct 2026):** everything above: four scheduled messages, JSON log, regex extraction, term awareness and carry-forward,
 attendance maths, MRS tracker, `done` handling, command and NL bot, Telegram channel with polling chat (switched from CallMeBot
-on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 30 tests. Dry-run on real Nexus data (18 Oct) fixed two
+on 18 Oct 2026), Flask webhook (Twilio/JSON/GET), Railway files, 32 tests. Live on Railway since 18 Oct 2026; Telegram connected.
+Previous-term items hidden by default (`CARRY_FORWARD`), and messages restyled (urgency dots, CAPS headers) at the user's request. Dry-run on real Nexus data (18 Oct) fixed two
 noise bugs: past-dated announcements, and assignment notifications.
 
 **Pending / ideas:**
 - First live run on Railway: the client follows the MCP Streamable HTTP spec at `/mcp/<token>`, but the sandbox could not reach
   students.mesaschool.co.in, so the real transport is unverified. Check the logs on the first deploy.
-- Open question for the user: hide previous-term carry-forward items by default? (7 old assignments and 6 attendance warnings as of Oct 2026)
 - An optional LLM fallback for open questions (e.g. Claude with Nexus tools) when the rule-based router finds nothing.
 - Pull assignment briefs (`get_assignment`) into the 24h alert for attachments and rubric links.
 - Detect MRS completion automatically if Nexus exposes it.

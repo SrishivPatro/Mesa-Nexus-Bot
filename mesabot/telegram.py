@@ -40,10 +40,11 @@ _URL_RE = re.compile(r"https?://\S+")
 _BOLD_RE = re.compile(r"(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])")
 _ITALIC_RE = re.compile(r"(?<![\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?![\w_])")
 _STRIKE_RE = re.compile(r"(?<![\w~])~(?!\s)([^~\n]+?)(?<!\s)~(?![\w~])")
+_CODE_RE = re.compile(r"`([^`\n]+)`")
 
 
 def to_html(text: str) -> str:
-    """WhatsApp-style *bold* _italic_ ~strike~ → Telegram HTML. URLs and file names
+    """WhatsApp-style *bold* _italic_ ~strike~ `code` → Telegram HTML. URLs and file names
     with underscores (Super_Case.pdf) are left untouched."""
     out, last = [], 0
     for match in _URL_RE.finditer(text):
@@ -56,12 +57,14 @@ def to_html(text: str) -> str:
 
 def _format(segment: str) -> str:
     s = html.escape(segment)
+    s = _CODE_RE.sub(r"<code>\1</code>", s)
     s = _BOLD_RE.sub(r"<b>\1</b>", s)
     s = _ITALIC_RE.sub(r"<i>\1</i>", s)
     return _STRIKE_RE.sub(r"<s>\1</s>", s)
 
 
 def strip_markup(text: str) -> str:
+    text = _CODE_RE.sub(r"\1", text)
     return _STRIKE_RE.sub(r"\1", _ITALIC_RE.sub(r"\1", _BOLD_RE.sub(r"\1", text)))
 
 

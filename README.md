@@ -81,6 +81,7 @@ Without these, messages say *"Google Calendar not connected"* and everything els
 | `ATTENDANCE_AT_RISK_MARGIN` | optional | Warn when you can miss ≤ this many more classes. Default `1` |
 | `ATTENDANCE_UNTRACKED_COURSES` | optional | Default `AI Workshops,Career Readiness,Workshops,Mesa Startup Lab` |
 | `ACTION_LOOKBACK_DAYS` | optional | Show undated action items posted in the last N days. Default `7` |
+| `CARRY_FORWARD` | optional | `true` also shows the previous term's unsubmitted work and low attendance. Default `false` |
 | `WEBHOOK_SECRET` | optional | Enables `/webhook` (other relays) and `POST /run/<job>?key=…` (run a job now) |
 | `CALLMEBOT_PHONE` / `CALLMEBOT_API_KEY` | legacy | WhatsApp via CallMeBot, used only when `TELEGRAM_BOT_TOKEN` is not set |
 | `LOG_LEVEL` | optional | Default `INFO` |
@@ -125,7 +126,7 @@ python -m mesabot.cli ask "am I at risk of low attendance"
 
 ## How it decides things
 - **Term-aware:** the active term comes from `list_courses` dates (see CLAUDE.md). New terms are picked up automatically.
-  Unsubmitted assignments and below-75% attendance from the previous term are carried forward until cleared or marked `done`.
+  Only the current term is shown. Set `CARRY_FORWARD=true` to also show the previous term's unsubmitted work and low attendance.
 - **Attendance:** courses with no attendance (AI Workshops, Career Readiness, Workshops, Mesa Startup Lab) show *"attendance not tracked"*
   and never alert. New-term courses with no sessions yet show *"no attendance taken yet"*.
 - **Announcements:** regex extracts Google Form links, other links, deadlines written in plain English, attachment filenames,

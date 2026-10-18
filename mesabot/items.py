@@ -147,7 +147,7 @@ class World:
 
     def assignment_items(self) -> list[Item]:
         items = []
-        scope = self.ctx.tracked_terms()
+        scope = self.ctx.tracked_terms() if self.cfg.carry_forward else {self.ctx.active_name} - {None}
         for a in self.assignments:
             if a.get("submissionStatus") == "submitted" or a["id"] in self.graded_ids:
                 continue  # graded in-class work shows as "not submitted" but is resolved
@@ -313,7 +313,7 @@ class World:
     def attendance(self) -> list[CourseAttendance]:
         summary = self.nexus.get_attendance_summary()
         rows = analyze(summary, self.ctx, self.cfg.attendance_threshold, self.cfg.at_risk_margin,
-                       self.cfg.untracked_courses)
+                       self.cfg.untracked_courses, include_previous=self.cfg.carry_forward)
         return [r for r in rows if not (r.carried and self.store.is_done(attendance_key(r.course)))]
 
     def attendance_alerts(self) -> list[CourseAttendance]:

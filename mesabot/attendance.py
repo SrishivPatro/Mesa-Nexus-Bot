@@ -49,7 +49,7 @@ def is_untracked(course: str, untracked: Iterable[str]) -> bool:
 
 
 def analyze(summary: dict[str, Any], ctx: TermContext, threshold: float, at_risk_margin: int,
-            untracked: Iterable[str]) -> list[CourseAttendance]:
+            untracked: Iterable[str], include_previous: bool = True) -> list[CourseAttendance]:
     """Attendance for the active term's courses, plus the previous term's unresolved ones.
 
     Courses with no attendance record are listed as no_data (new term, nothing taken
@@ -92,7 +92,7 @@ def analyze(summary: dict[str, Any], ctx: TermContext, threshold: float, at_risk
         term = record.get("term") or ctx.term_of_course(record.get("course"))
         if active and term == active:
             results.append(build(record.get("course", ""), term, record, carried=False))
-        elif term == ctx.previous_name:
+        elif include_previous and term == ctx.previous_name:
             item = build(record.get("course", ""), term, record, carried=True)
             # Carry forward only what is unresolved: below threshold.
             if item.status == "below":

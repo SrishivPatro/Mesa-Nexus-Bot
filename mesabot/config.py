@@ -52,6 +52,7 @@ class Config:
     attendance_threshold: float = 75.0
     at_risk_margin: int = 1
     action_lookback_days: int = 7
+    carry_forward: bool = False  # show the previous term's unresolved items
     untracked_courses: tuple[str, ...] = field(default=DEFAULT_UNTRACKED_COURSES)
     whatsapp_chunk_size: int = 1400
     run_telegram_polling: bool = True
@@ -78,6 +79,7 @@ class Config:
             attendance_threshold=float(_env("ATTENDANCE_THRESHOLD", "75")),
             at_risk_margin=int(_env("ATTENDANCE_AT_RISK_MARGIN", "1")),
             action_lookback_days=int(_env("ACTION_LOOKBACK_DAYS", "7")),
+            carry_forward=_flag("CARRY_FORWARD", False),
             untracked_courses=(
                 tuple(c.strip() for c in untracked.split(",") if c.strip())
                 if untracked
