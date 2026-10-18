@@ -80,7 +80,7 @@ def test_every_free_text_question_goes_to_gemini(make_svc):
     prompt = body["systemInstruction"]["parts"][0]["text"]
     assert "next week = Mon 19 Oct to Sun 25 Oct" in prompt       # explicit dates, no guessing
     assert "Today is Sunday" in prompt
-    assert body["contents"][-1]["parts"][0]["text"] == "How many classes do I have next week"
+    assert body["contents"][0]["parts"][0]["text"] == "How many classes do I have next week"
 
 
 def test_rules_answer_when_gemini_is_not_configured(make_svc):
